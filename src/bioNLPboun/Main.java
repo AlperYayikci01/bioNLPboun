@@ -11,6 +11,8 @@ public class Main {
 	public static ArrayList<File> trainFiles = new ArrayList<File>(); // All File objects of training set
 	public static ArrayList<Names> allNames = new ArrayList<Names>(); // All Names objects of names.dmp file.
 	public static ArrayList<String> names = new ArrayList<String>(); // All Names objects of names.dmp file.
+	public static TestMethods testing;
+
 
 	private static final Logger LOGGER = Logger.getLogger( Main.class.getName() );
 	public static void main(String[] args) throws Exception{
@@ -19,7 +21,12 @@ public class Main {
 		System.out.print("Reading names.dmp file...");
 		ConstructNamesObjects();
 		System.out.println("Done!");
-		TestExactMatchesTraining();
+		testing = new TestMethods(trainFiles, names);
+
+
+
+		//testing.TestExactMatchesTraining();
+		testing.ConstructOutputFiles();
 
 	}
 
@@ -91,45 +98,11 @@ public class Main {
 
 	}
 
-	private static void TestExactMatchesTraining() throws IOException {
-
-		BufferedReader br;
-		String line;
-		String[] wordsInLine;
-
-		for(File file : trainFiles) {
-			br = new BufferedReader(new FileReader(file));
 
 
-			while ((line = br.readLine()) != null) {
-
-				wordsInLine = line.split("\\s+");
-
-				for(String word : wordsInLine)
-				{
-					if(IsBacteriaName(word))
-					{
-						LOGGER.log( Level.FINER, "bacteria name match" + word );
-					}
-				}
-
-			}
 
 
-		}
 
-	}
-
-	private static boolean IsBacteriaName(String word) throws IOException {
-
-		if(names.contains(word))
-		{
-			return  true;
-		}
-		else return false;
-
-
-	}
 
 }
 
