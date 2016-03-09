@@ -29,6 +29,6 @@ public class Names {
 	
 	@Override
 	public String toString() {
-		return "{" + tax_id + ","+ name_txt + ","+ unique_name + ","+ name_class + "}";
+		return "Names : {\n\t" + tax_id + ",\n\t"+ name_txt + ",\n\t"+ unique_name + ",\n\t"+ name_class + "\n}";
 	}
 }
