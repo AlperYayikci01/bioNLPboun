@@ -29,11 +29,7 @@ public class Main {
 		System.out.println("Done!");
 
 		System.out.print("Testing exact matches with training set...");
-		testing = new TestMethods(trainFiles, names);
-		
-		
-		
-		//testing.TestExactMatchesTraining();
+		testing = new TestMethods(trainDocs, names);
 		testing.ConstructOutputFiles();
 		System.out.println("Done!");
 		
@@ -119,7 +115,7 @@ public class Main {
 	private static void ConstructNamesObjects(){
 
 		ArrayList<String> namesDmpFields = new ArrayList<String>();
-		namesDmpFields = ReadFields("taxdump/names.dmp");
+		namesDmpFields = ReadFields("taxdump\\names.dmp");
 		int indexWord = 0;
 		while(indexWord < namesDmpFields.size()){
 			int tax_id = Integer.parseInt(namesDmpFields.get(indexWord));
@@ -145,11 +141,16 @@ public class Main {
 			String pattern = "(?U)\\b\\p{Lu}\\p{L}*\\b";
 			String[] words = text.split("\\s");
 
+			int tokenBeginIndex=0;
+			int tokenEndIndex=0;
+
 			for(int i = 0; i < words.length; i++){
 				if(words[i].matches(pattern)){ // Find words starting with capital letter.
 					String token = words[i];
+                    tokenBeginIndex = text.indexOf(token, tokenEndIndex);
 					// Add the next x words to candidates to handle phrases too.
-					for(int j = 0; j < NEXT_N_WORDS ; j++){ 
+					for(int j = 0; j < NEXT_N_WORDS ; j++){
+						tokenEndIndex = tokenBeginIndex + words[i+j].length();
 						if(i+j >= words.length){
 							break;
 						}
@@ -157,11 +158,12 @@ public class Main {
 							token += " " + words[i+j];
 						Term term = new Term();
 						term.term_id = term_id;
-						term.name_txt = token;
-						term.start_pos = text.indexOf(token);
-						term.end_pos = term.start_pos + token.length();
+						term.name_txt = token.trim();
+						term.start_pos = tokenBeginIndex;
+						term.end_pos = tokenEndIndex;
 						candidates.add(term);
 						term_id++;
+
 					}
 				}
 			}
