@@ -31,4 +31,10 @@ public class Term {
 	public String toString() {
 		return "Term : {\n\t" + term_id + ",\n\t"+ start_pos + ",\n\t"+ end_pos + ",\n\t"+ name_txt + "\n}";
 	}
+	
+	@Override
+	public Term clone() {
+		Term term = new Term(this.term_id,this.start_pos,this.end_pos,this.name_txt);
+		return term;
+	}
 }

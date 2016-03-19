@@ -28,13 +28,16 @@ public class Main {
 		ProcessDocuments(trainDocs);
 		System.out.println("Done!");
 
+		
+
 		System.out.print("Testing exact matches with training set...");
-		testing = new TestMethods(trainFiles, names);
-		
-		
-		
+		testing = new TestMethods();
+
+		for(Document doc : trainDocs){
+			TestMethods.ConstructOutputFiles(doc);
+		}
+
 		//testing.TestExactMatchesTraining();
-		testing.ConstructOutputFiles();
 		System.out.println("Done!");
 		
 	}
