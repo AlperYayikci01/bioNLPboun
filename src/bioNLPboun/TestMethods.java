@@ -10,9 +10,6 @@ import java.util.logging.Logger;
  */
 public class TestMethods {
 
-//    private static ArrayList<File> trainFiles;
-//    private static ArrayList<String> names;
-
     private static final Logger LOGGER = Logger.getLogger( TestMethods.class.getName() );
 
 
@@ -59,20 +56,25 @@ public class TestMethods {
 
     }
 
-    public static void ConstructOutputFiles(Document doc)throws IOException
-    {
-    	PrintWriter writer = new PrintWriter(doc.file_name + ".a1", "UTF-8");
+    public static void ConstructOutputFiles(Document doc) throws IOException {
     	
-    	writer.println("T1\tTitle 0 " + (doc.title.length()-1) + "\t" + doc.title);
-    	writer.println("T2\tParagraph " + doc.title.length() + " " + 
-    				(doc.paragraph.length()-1) + "\t" + doc.paragraph);
+      //// WRITE A1.FILE ////
     	
-    	int t_id = 3;
+    	PrintWriter writer_a1 = new PrintWriter(doc.file_name.substring(0,doc.file_name.length()-4) + ".a1", "UTF-8");
+    	PrintWriter writer_a2 = new PrintWriter(doc.file_name.substring(0,doc.file_name.length()-4) + ".a2", "UTF-8");
+    	
+    	writer_a1.println("T1\tTitle 0 " + (doc.title.length()) + "\t" + doc.title);
+    	
+    	if(doc.paragraph.length() != 0){
+    		writer_a1.println("T2\tParagraph " + (doc.title.length()+1) + " " + 
+    				(doc.title.length() + doc.paragraph.length()+1) + "\t" + doc.paragraph);
+    	}
+    	
+
     	ArrayList<Term> matched_candidates = new ArrayList<Term>();
     	
     	// Find matched candidates
     	for(int i = doc.candidates.size()-1; i >= 0; i--){
-    		
     		Term candidate = doc.candidates.get(i);
     		boolean isMatched = searchInNames(candidate);
     		
@@ -93,72 +95,37 @@ public class TestMethods {
 		    			continue;
 		    		}else{
 		    			Term next_candidate = doc.candidates.get(i-n);
-		    			isMatched = searchInNames(candidate);
+		    			isMatched = searchInNames(next_candidate);
 		    			if(isMatched)
-		    				matched_candidates.add(candidate);
+		    				matched_candidates.add(next_candidate);
 		    			i--;
 		    		}
 				}
     		}
     	}
+    	int T_id = 3;
+    	int N_id = 1;
+    	// Write matched bacteria
     	
-    	// Write matched bacterias
     	for(int i = matched_candidates.size()-1; i >= 0; i--){
-    		Term matched_candidate = doc.candidates.get(i);
-    		writer.println("T" + t_id + "\tBacteria " + matched_candidate.start_pos + 
+    		Term matched_candidate = matched_candidates.get(i);
+    		writer_a1.println("T" + T_id + "\tBacteria " + matched_candidate.start_pos + 
     				" " + matched_candidate.end_pos + "\t" + matched_candidate.name_txt);
-    		
+    		writer_a2.println("N" + N_id + "\tNCBI_Taxonomy Annotation:T" + T_id + 
+    				" Referent:" + matched_candidate.term_id);
+    		T_id++;
+    		N_id++;
     	}
     	
-    	writer.close();
-//        BufferedReader br;
-//        String line;
-//        String[] wordsInLine;
-//        
-//        int lineNo =2;
-//        int nextCharIndex = 0;
-//        int startCharIndexOfMatch =0; //line based char no of first character of the matching word
-//        PrintWriter writer;
-//
-//        for(File file : Main.trainFiles) {
-//            br = new BufferedReader(new FileReader(file));
-//            writer = new PrintWriter(file.getName() + ".a1", "UTF-8");
-//
-//            nextCharIndex = writeTitleAndParagraph(file, writer);
-//
-//            while ((line = br.readLine()) != null) {
-//
-//
-//                wordsInLine = line.split("\\s+");
-//
-//                for(String word : wordsInLine)
-//                {
-//                    startCharIndexOfMatch += word.length();
-//
-//                    if(IsBacteriaName(word))
-//                    {
-//                        lineNo ++;
-//                        writer.println("T" + lineNo + " Bacteria " + (startCharIndexOfMatch + nextCharIndex) + " " + (startCharIndexOfMatch + nextCharIndex + word.length()) + " " + word) ;
-//                        //LOGGER.log( Level.FINER, "bacteria name match" + word );
-//                    }
-//                }
-//              nextCharIndex += line.length();
-//            }
-//
-//            writer.close();
-//
-//            nextCharIndex =0;
-//            lineNo = 2;
-//            startCharIndexOfMatch =0;
-//        }
-
+    	writer_a1.close();
+    	writer_a2.close();
     }
 
     public static boolean searchInNames(Term candidate){
     	
     	boolean isMatched = false;
 		for(Names namesObject : Main.allNames){
-			if(namesObject.name_txt.contains(candidate.name_txt)){
+			if(namesObject.name_txt.equals(candidate.name_txt)){
 				isMatched = true;
 				candidate.term_id = namesObject.tax_id;
 				break;
@@ -167,49 +134,4 @@ public class TestMethods {
 		return isMatched;
     	
     }
-
-//    public static int writeTitleAndParagraph(Document doc)throws IOException
-//    {
-//    	
-//
-//    	
-//        BufferedReader br;
-//        String line;
-//        int lineNo =0;
-//        int nextCharIndex =0;
-//        String paragraph ="";
-//        br = new BufferedReader(new FileReader(file));
-//
-//
-//            while ((line = br.readLine()) != null) {
-//
-//                lineNo ++;
-//
-//             if(lineNo == 1)
-//             {
-//                 writer.println("T1 Title 0 " + (line.length()-1) + " " + line + "\n");
-//
-//             }
-//             else if (lineNo == 2){
-//
-//                 writer.print("T2 Paragraph " + (nextCharIndex));
-//                 paragraph += line;
-//             }
-//             else{
-//
-//                 paragraph += line;
-//             }
-//
-//                nextCharIndex += line.length();
-//
-//            }
-//
-//            writer.println(" " + nextCharIndex + " " + paragraph);
-//
-//
-//         return nextCharIndex;
-//
-//
-//
-//    }
 }
