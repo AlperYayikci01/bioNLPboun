@@ -10,55 +10,44 @@ import java.util.logging.Logger;
  */
 public class TestMethods {
 
-    private static ArrayList<Document> trainDocs;
-    private static ArrayList<String> names;
-
     private static final Logger LOGGER = Logger.getLogger( TestMethods.class.getName() );
 
 
-    public TestMethods(ArrayList<Document> trDocs, ArrayList<String> nm){
-
-        trainDocs = trDocs;
-        names = nm;
+    public TestMethods(){
     }
 
-    public static void ConstructOutputFiles() throws IOException {
+    public static void TestExactMatchesTraining() throws IOException {
 
         BufferedReader br;
         String line;
-        PrintWriter writer;
+        String[] wordsInLine;
 
-        for (Document document : trainDocs) {
+        for(File file : Main.trainFiles) {
+            br = new BufferedReader(new FileReader(file));
 
-            ArrayList<Term> candidates = document.candidates;
-            writer = new PrintWriter(document.file_name + ".a1", "UTF-8");
-            int lineNo = 2;
-            String prg = document.paragraph;
 
-            writer.println("T1 Title 0 " + (document.title.length() - 1) + " " + document.title + "\n");
-            writer.println("T1 Paragraph " + document.title.length() + " " + (document.paragraph.length() - 1) + " " + document.paragraph + "\n");
+            while ((line = br.readLine()) != null) {
 
-            for (Term term : candidates) {
-                String termName = term.name_txt.trim();
+                wordsInLine = line.split("\\s+");
 
-                if (IsBacteriaName(termName)) {
-
-                    lineNo++;
-
-                    writer.println("T" + lineNo + " Bacteria " + term.start_pos + " " + term.end_pos + " " + termName);
-
+                for(String word : wordsInLine)
+                {
+                    if(IsBacteriaName(word))
+                    {
+                        LOGGER.log( Level.FINER, "bacteria name match" + word );
+                    }
                 }
 
             }
-            writer.close();
+
+
         }
+
     }
 
-    //MAKES EXACT MATCH ONLY. NEEDS TO BE IMPROVED AND FASTENED
+    public static boolean IsBacteriaName(String word) throws IOException {
 
-    public static boolean IsBacteriaName(String termName) throws IOException {
-
-        if(names.contains(termName))
+        if(Main.names.contains(word))
         {
             return  true;
         }
@@ -67,5 +56,82 @@ public class TestMethods {
 
     }
 
+    public static void ConstructOutputFiles(Document doc) throws IOException {
+    	
+      //// WRITE A1.FILE ////
+    	
+    	PrintWriter writer_a1 = new PrintWriter(doc.file_name.substring(0,doc.file_name.length()-4) + ".a1", "UTF-8");
+    	PrintWriter writer_a2 = new PrintWriter(doc.file_name.substring(0,doc.file_name.length()-4) + ".a2", "UTF-8");
+    	
+    	writer_a1.println("T1\tTitle 0 " + (doc.title.length()) + "\t" + doc.title);
+    	
+    	if(doc.paragraph.length() != 0){
+    		writer_a1.println("T2\tParagraph " + (doc.title.length()+1) + " " + 
+    				(doc.title.length() + doc.paragraph.length()+1) + "\t" + doc.paragraph);
+    	}
+    	
 
+    	ArrayList<Term> matched_candidates = new ArrayList<Term>();
+    	
+    	// Find matched candidates
+    	for(int i = doc.candidates.size()-1; i >= 0; i--){
+    		Term candidate = doc.candidates.get(i);
+    		boolean isMatched = searchInNames(candidate);
+    		
+			if(isMatched)
+				matched_candidates.add(candidate);
+			
+			// Handle phrases up to next n words of the candidates
+			for(int n = 1; n < Main.NEXT_N_WORDS; n++){
+				if(i-n < 0)
+					break;
+				if(!doc.candidates.get(i).name_txt.contains((CharSequence) doc.candidates.get(i-n).name_txt)){
+					// If previous candidate is not shorter version of the candidate, leave and pull next canddidate.
+					break;
+				}else{
+					if(isMatched){
+						// If candidate's longer phrase already matched, we can ignore shorter version of it
+		    			i--;
+		    			continue;
+		    		}else{
+		    			Term next_candidate = doc.candidates.get(i-n);
+		    			isMatched = searchInNames(next_candidate);
+		    			if(isMatched)
+		    				matched_candidates.add(next_candidate);
+		    			i--;
+		    		}
+				}
+    		}
+    	}
+    	int T_id = 3;
+    	int N_id = 1;
+    	// Write matched bacteria
+    	
+    	for(int i = matched_candidates.size()-1; i >= 0; i--){
+    		Term matched_candidate = matched_candidates.get(i);
+    		writer_a1.println("T" + T_id + "\tBacteria " + matched_candidate.start_pos + 
+    				" " + matched_candidate.end_pos + "\t" + matched_candidate.name_txt);
+    		writer_a2.println("N" + N_id + "\tNCBI_Taxonomy Annotation:T" + T_id + 
+    				" Referent:" + matched_candidate.term_id);
+    		T_id++;
+    		N_id++;
+    	}
+    	
+    	writer_a1.close();
+    	writer_a2.close();
+    }
+
+    public static boolean searchInNames(Term candidate){
+    	
+    	boolean isMatched = false;
+		for(Names namesObject : Main.allNames){
+			if(namesObject.name_txt.equals(candidate.name_txt)){
+				isMatched = true;
+				candidate.term_id = namesObject.tax_id;
+				break;
+			}
+		}
+		return isMatched;
+    	
+    }
 }
