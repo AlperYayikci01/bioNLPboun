@@ -2,7 +2,6 @@ package bioNLPboun;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -16,49 +15,10 @@ public class TestMethods {
     public TestMethods(){
     }
 
-    public static void TestExactMatchesTraining() throws IOException {
-
-        BufferedReader br;
-        String line;
-        String[] wordsInLine;
-
-        for(File file : Main.trainFiles) {
-            br = new BufferedReader(new FileReader(file));
-
-
-            while ((line = br.readLine()) != null) {
-
-                wordsInLine = line.split("\\s+");
-
-                for(String word : wordsInLine)
-                {
-                    if(IsBacteriaName(word))
-                    {
-                        LOGGER.log( Level.FINER, "bacteria name match" + word );
-                    }
-                }
-
-            }
-
-
-        }
-
-    }
-
-    public static boolean IsBacteriaName(String word) throws IOException {
-
-        if(Main.names.contains(word))
-        {
-            return  true;
-        }
-        else return false;
-
-
-    }
 
     public static void ConstructOutputFiles(Document doc) throws IOException {
     	
-      //// WRITE A1.FILE ////
+      //// WRITE A1 AND A2 FILE ////
     	
     	PrintWriter writer_a1 = new PrintWriter(doc.file_name.substring(0,doc.file_name.length()-4) + ".a1", "UTF-8");
     	PrintWriter writer_a2 = new PrintWriter(doc.file_name.substring(0,doc.file_name.length()-4) + ".a2", "UTF-8");

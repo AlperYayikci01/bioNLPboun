@@ -1,6 +1,7 @@
 package bioNLPboun;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Document {
 	public int doc_id;
@@ -8,6 +9,7 @@ public class Document {
 	public String title;
 	public String paragraph;
 	public ArrayList<Term> candidates;
+	public HashMap<Term, String> originalCandidateVersions;
 	
 	Document(){
 		this.doc_id = -1;

@@ -8,9 +8,9 @@ public class Main {
 	public static ArrayList<File> trainFiles = new ArrayList<File>(); // All File objects of training set
 	public static ArrayList<Document> trainDocs = new ArrayList<Document>(); // All Document objects of training set
 	public static ArrayList<Names> allNames = new ArrayList<Names>(); // All Names objects of names.dmp file.
-	public static ArrayList<String> names = new ArrayList<String>(); // All Names objects of names.dmp file.
-	public static TestMethods testing;
 	public static final int NEXT_N_WORDS = 2;
+	//public static String[] shorteningsInNamesDump = { "sp.", "str.", "aff.", "cf.", "subgen.", "gen.", "nov."};
+
 
 	public static void main(String[] args) throws Exception{
 
@@ -29,13 +29,12 @@ public class Main {
 		System.out.println("Done!");
 
 		System.out.print("Testing exact matches with training set...");
-		testing = new TestMethods();
-		
+
 		for(Document doc : trainDocs){
 			TestMethods.ConstructOutputFiles(doc);
 		}
 		
-		//testing.TestExactMatchesTraining();
+
 		System.out.println("Done!");
 		
 	}
@@ -120,7 +119,7 @@ public class Main {
 	private static void ConstructNamesObjects(){
 
 		ArrayList<String> namesDmpFields = new ArrayList<String>();
-		namesDmpFields = ReadFields("taxdump\names.dmp");
+		namesDmpFields = ReadFields("taxdump\\names.dmp");
 		int indexWord = 0;
 		while(indexWord < namesDmpFields.size()){
 			int tax_id = Integer.parseInt(namesDmpFields.get(indexWord));
@@ -128,9 +127,19 @@ public class Main {
 			String unique_name = namesDmpFields.get(indexWord+2);
 			String name_class = namesDmpFields.get(indexWord+3);
 
+			if(name_txt.charAt(0) == '\"' && name_txt.charAt(name_txt.length()-1) == '\"')
+			{
+				name_txt = name_txt.replaceAll("\"", "");
+			}else if(name_txt.charAt(0) == '\'' && name_txt.charAt(name_txt.length()-1) == '\'')
+			{
+				name_txt = name_txt.replaceAll("'", "");
+			}
+
+			name_txt = name_txt.replaceAll("\\."," ");
+            name_txt = name_txt.trim().replaceAll("\\s+", " ");
+
 			Names namesObj = new Names(tax_id,name_txt,unique_name,name_class);
 			allNames.add(namesObj);
-			names.add(name_txt);
 
 			indexWord += 4;
 		}
@@ -142,18 +151,29 @@ public class Main {
 		for(Document doc : docs){
 			int term_id = 0;
 			ArrayList<Term> candidates = new ArrayList<Term>();
+			HashMap<Term, String> originalCandidateVersions = new HashMap<>();
 			String text = doc.title + doc.paragraph;
+			text = text.replaceAll("\\."," ");
+			text = text.trim().replaceAll("\\s+", " ");
 			String pattern = "(?U)\\b\\p{Lu}\\p{L}*\\b";
 			String[] words = text.split("\\s");
-
+            String word = "";
 			int tokenBeginIndex=0;
 			int tokenEndIndex=0;
 			int tokenLength=0;
+
+
 			for(int i = 0; i < words.length; i++){
+
 				if(words[i].matches(pattern)){ // Find words starting with capital letter.
-					String token = words[i];
-					tokenLength = token.length();
-					tokenBeginIndex = text.indexOf(token, tokenEndIndex);
+
+					//Normalize word
+					word = NormalizeWord(words[i]);
+					String token = word;
+					String tokenOriginalVersion = "";
+					String wordToAdd = "";
+					tokenLength = words[i].length();
+					tokenBeginIndex = text.indexOf(words[i], tokenEndIndex);
 					// Add the next x words to candidates to handle phrases too.
 					for(int j = 0; j < NEXT_N_WORDS ; j++){
 
@@ -162,12 +182,18 @@ public class Main {
 						}
 						if(j == 0) {
 							tokenEndIndex = tokenBeginIndex + tokenLength;
+							tokenOriginalVersion = token;
 						}
 						else
 						{
 							tokenEndIndex = tokenBeginIndex + tokenLength + words[i + j].length() + 1; //+1 for space
+
 							tokenLength += words[i + j].length();
-							token += " " + words[i + j];
+							wordToAdd = NormalizeWord(words[i+j]);
+							tokenOriginalVersion = token + " " + words[i+j];
+							token += " " + wordToAdd;
+
+
 						}
 
 						Term term = new Term();
@@ -176,6 +202,7 @@ public class Main {
 						term.start_pos = tokenBeginIndex;
 						term.end_pos = tokenEndIndex;
 						candidates.add(term);
+						originalCandidateVersions.put(term, tokenOriginalVersion);
 						term_id++;
 
 					}
@@ -183,7 +210,34 @@ public class Main {
 			}
 			
 			doc.candidates = candidates;
+			doc.originalCandidateVersions = originalCandidateVersions;
 		}
+	}
+
+	private static String NormalizeWord(String word)
+	{
+		int lastIndexOfKesme =0;
+		word = word.trim();
+		word = word.replaceAll(",$", "");
+		word = word.replaceAll(";$", "");
+
+		/*if(!Arrays.asList(shorteningsInNamesDump).contains(word)) {
+			word = word.replaceAll("\\.$", "");
+		}*/
+
+		if(word.contains("'")) {
+			lastIndexOfKesme = word.lastIndexOf("'");
+			if(lastIndexOfKesme != word.length()-1)
+			{
+				//eliminate part after kesme
+				word = word.substring(0, lastIndexOfKesme - 1);
+			}
+
+			//remove other kesmes
+			word = word.replaceAll("'", "");
+		}
+
+		return word;
 	}
 }
 
