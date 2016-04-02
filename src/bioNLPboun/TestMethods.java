@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 /**
  * Created by berfu on 9.3.2016.
  */
+
 public class TestMethods {
 
     private static final Logger LOGGER = Logger.getLogger( TestMethods.class.getName() );
@@ -102,18 +103,64 @@ public class TestMethods {
     	}
     	writer_a2.close();
     }
-   
-    public static boolean searchInNames(Term candidate){
-    	
-    	boolean isMatched = false;
+
+	public static boolean searchInNames(Term candidate){
+
+		double editDistance = Double.POSITIVE_INFINITY;
+		int editDisFound = -1;
+		boolean isMatched = false;
+		Names currentName = new Names();
 		for(Names namesObject : Main.allNames){
+			currentName = namesObject;
 			if(namesObject.name_txt.equals(candidate.name_txt)){
 				isMatched = true;
+				editDistance = 0;
 				candidate.term_id = namesObject.tax_id;
 				break;
 			}
+			else
+			{
+				editDisFound = computeLevenshteinDistance(candidate.name_txt, namesObject.name_txt);
+				if(editDistance > editDisFound)
+				{
+					editDistance = editDisFound;
+					candidate.term_id = namesObject.tax_id;
+				}
+
+			}
+		}
+		double errorRatio = editDistance / candidate.name_txt.length();
+
+		if(editDistance < 2 && errorRatio < 0.2)
+		{
+			isMatched = true;
 		}
 		return isMatched;
-    	
-    }
+
+	}
+
+	public static int computeLevenshteinDistance(CharSequence lhs, CharSequence rhs) {
+		int[][] distance = new int[lhs.length() + 1][rhs.length() + 1];
+
+		for (int i = 0; i <= lhs.length(); i++)
+			distance[i][0] = i;
+		for (int j = 1; j <= rhs.length(); j++)
+			distance[0][j] = j;
+
+		for (int i = 1; i <= lhs.length(); i++) {
+
+			for (int j = 1; j <= rhs.length(); j++) {
+
+				int a = distance[i - 1][j] + 1;
+				int b = distance[i][j - 1] + 1;
+				int c = distance[i - 1][j - 1] + ((lhs.charAt(i - 1) == rhs.charAt(j - 1)) ? 0 : 1);
+				int min = a > b ? b : a;
+				min = min > c ? c : min;
+
+				distance[i][j] = min;
+			}
+		}
+
+		return distance[lhs.length()][rhs.length()];
+	}
 }
