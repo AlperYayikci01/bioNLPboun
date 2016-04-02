@@ -81,6 +81,28 @@ public class TestMethods {
     	writer_a2.close();
     }
 
+    public static void ConstructA2Files(Document doc) throws IOException {
+    	
+        File file = new File("resources/BB-cat-output-a2-files/"+ doc.file_name.substring(0,doc.file_name.length()-4) + ".a2");
+        if (!file.exists()) {
+        	file.createNewFile();
+        }
+        PrintWriter writer_a2 = new PrintWriter(file);
+    	int N_id = 1;
+    	for(Term term : doc.a1Terms){
+    		boolean isMatched = searchInNames(term);
+    		if(isMatched){
+    			writer_a2.println("N" + N_id + "\tNCBI_Taxonomy Annotation:T" + term.T_id + 
+        				" Referent:" + term.term_id);
+    			System.out.println("N" + N_id + "\tNCBI_Taxonomy Annotation:T" + term.T_id + 
+        				" Referent:" + term.term_id);
+    			N_id ++;
+    		}
+    		
+    	}
+    	writer_a2.close();
+    }
+   
     public static boolean searchInNames(Term candidate){
     	
     	boolean isMatched = false;

@@ -31,7 +31,7 @@ public class Main {
 		System.out.print("Testing exact matches with training set...");
 
 		for(Document doc : trainDocs){
-			TestMethods.ConstructOutputFiles(doc);
+			TestMethods.ConstructA2Files(doc);
 		}
 		
 
@@ -114,12 +114,53 @@ public class Main {
 			}
 		}
 
+		for(File file : allFiles){
+
+			if(file.getName().startsWith("BB-cat-") && file.getName().endsWith(".a1")){
+				for(Document doc : trainDocs){
+					String docName = doc.file_name.substring(0,doc.file_name.indexOf("."));
+					String a1Name = file.getName().substring(0,file.getName().indexOf("."));
+					if(docName.equals(a1Name)){
+						try {
+							BufferedReader buf = new BufferedReader(new FileReader(file.getAbsolutePath()));
+							String line = null;
+							String[] wordsInLine;
+
+							while(true){
+								line = buf.readLine();
+								if(line == null){
+									break;
+								}else{
+									wordsInLine = line.split("\\t");
+									if(wordsInLine[1].startsWith("Bacteria")){
+										Term term = new Term();
+										term.T_id = Integer.parseInt(wordsInLine[0].substring(1, wordsInLine[0].length()));
+										String[] wordsInBacteria;
+										wordsInBacteria = wordsInLine[1].split(" ");
+										term.start_pos = Integer.parseInt(wordsInBacteria[1]);
+										term.end_pos = Integer.parseInt(wordsInBacteria[wordsInBacteria.length-1]);
+										term.name_txt = wordsInLine[2];
+										doc.a1Terms.add(term);
+									}
+								}
+							}
+
+							buf.close();
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+		}
+
 	}
 
 	private static void ConstructNamesObjects(){
 
 		ArrayList<String> namesDmpFields = new ArrayList<String>();
-		namesDmpFields = ReadFields("taxdump\\names.dmp");
+		namesDmpFields = ReadFields("taxdump/names.dmp");
 		int indexWord = 0;
 		while(indexWord < namesDmpFields.size()){
 			int tax_id = Integer.parseInt(namesDmpFields.get(indexWord));
@@ -211,6 +252,11 @@ public class Main {
 			
 			doc.candidates = candidates;
 			doc.originalCandidateVersions = originalCandidateVersions;
+		}
+	}
+	private static void ProcessA1OfDocuments(ArrayList<Document> docs){
+		for(Document doc : docs){
+			
 		}
 	}
 
