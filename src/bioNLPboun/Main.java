@@ -14,7 +14,9 @@ public class Main {
 
 	public static void main(String[] args) throws Exception{
 
-		InitializeLogger();
+//		InitializeLogger();
+		
+		
 		
 		System.out.print("Reading documents...");
 		ConstructDocuments("BioNLP-ST-2016_BB-cat_train");
@@ -36,20 +38,24 @@ public class Main {
 		
 
 		System.out.println("Done!");
+		System.out.print("Evaluate matches with training set...");
+		Evaluator.compareA2Files("resources/BB-cat-output-a2-files", "BioNLP-ST-2016_BB-cat_train");
+		System.out.println("Done!");
+		
 		
 	}
 	
-	private static void InitializeLogger(){
-		try {
-			FileHandler fh = new FileHandler("bioNLPboun.log", false);
-			Logger l = Logger.getLogger("");
-			fh.setFormatter(new SimpleFormatter());
-			l.addHandler(fh);
-			l.setLevel(Level.ALL);
-		} catch (SecurityException | IOException e) {
-			e.printStackTrace();
-		}
-	}
+//	private static void InitializeLogger(){
+//		try {
+//			FileHandler fh = new FileHandler("bioNLPboun.log", false);
+//			Logger l = Logger.getLogger("");
+//			fh.setFormatter(new SimpleFormatter());
+//			l.addHandler(fh);
+//			l.setLevel(Level.ALL);
+//		} catch (SecurityException | IOException e) {
+//			e.printStackTrace();
+//		}
+//	}
 
 	private static ArrayList<String> ReadFields(String inputFilePath){
 		ArrayList<String> fields = new ArrayList<String>();
@@ -132,8 +138,9 @@ public class Main {
 									break;
 								}else{
 									wordsInLine = line.split("\\t");
-									if(wordsInLine[1].startsWith("Bacteria")){
+									if(wordsInLine[1].startsWith("Bacteria") || wordsInLine[1].startsWith("Habitat")){
 										Term term = new Term();
+										term.isBacteria = (wordsInLine[1].startsWith("Bacteria")) ? true : false;
 										term.T_id = Integer.parseInt(wordsInLine[0].substring(1, wordsInLine[0].length()));
 										String[] wordsInBacteria;
 										wordsInBacteria = wordsInLine[1].split(" ");
@@ -150,6 +157,7 @@ public class Main {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
+						break;
 					}
 				}
 			}
@@ -252,11 +260,6 @@ public class Main {
 			
 			doc.candidates = candidates;
 			doc.originalCandidateVersions = originalCandidateVersions;
-		}
-	}
-	private static void ProcessA1OfDocuments(ArrayList<Document> docs){
-		for(Document doc : docs){
-			
 		}
 	}
 

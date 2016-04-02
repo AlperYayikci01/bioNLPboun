@@ -91,15 +91,20 @@ public class TestMethods {
         PrintWriter writer_a2 = new PrintWriter(file);
     	int N_id = 1;
     	for(Term term : doc.a1Terms){
-    		boolean isMatched = searchInNames(term);
-    		if(isMatched){
-    			writer_a2.println("N" + N_id + "\tNCBI_Taxonomy Annotation:T" + term.T_id + 
-        				" Referent:" + term.term_id);
-    			System.out.println("N" + N_id + "\tNCBI_Taxonomy Annotation:T" + term.T_id + 
-        				" Referent:" + term.term_id);
-    			N_id ++;
+    		String termID = String.valueOf(term.term_id);
+    		if(term.isBacteria == true){
+    			if(searchInNames(term)){
+    				termID = String.valueOf(term.term_id);;
+    			}
     		}
-    		
+			String isBacteria = "NCBI_Taxonomy";
+			if(term.isBacteria == false){
+				isBacteria = "OntoBiotope";
+				termID = "OBT:000000";
+			}
+			writer_a2.println("N" + N_id + "\t" + isBacteria + " Annotation:T" + term.T_id + 
+    				" Referent:" + termID);
+			N_id ++;
     	}
     	writer_a2.close();
     }
@@ -118,23 +123,23 @@ public class TestMethods {
 				candidate.term_id = namesObject.tax_id;
 				break;
 			}
-			else
-			{
-				editDisFound = computeLevenshteinDistance(candidate.name_txt, namesObject.name_txt);
-				if(editDistance > editDisFound)
-				{
-					editDistance = editDisFound;
-					candidate.term_id = namesObject.tax_id;
-				}
-
-			}
+//			else
+//			{
+//				editDisFound = computeLevenshteinDistance(candidate.name_txt, namesObject.name_txt);
+//				if(editDistance > editDisFound)
+//				{
+//					editDistance = editDisFound;
+//					candidate.term_id = namesObject.tax_id;
+//				}
+//
+//			}
 		}
-		double errorRatio = editDistance / candidate.name_txt.length();
-
-		if(editDistance < 2 && errorRatio < 0.2)
-		{
-			isMatched = true;
-		}
+//		double errorRatio = editDistance / candidate.name_txt.length();
+//
+//		if(editDistance < 2 && errorRatio < 0.2)
+//		{
+//			isMatched = true;
+//		}
 		return isMatched;
 
 	}

@@ -7,7 +7,7 @@ public class Document {
 	public int doc_id;
 	public String file_name;
 	public String title;
-	public String paragraph;
+	public String paragraph; // Paragraph birden fazla olabiliyor düzeltmek lazım!!
 	public ArrayList<Term> candidates;
 	public ArrayList<Term> a1Terms;
 	public HashMap<Term, String> originalCandidateVersions;
