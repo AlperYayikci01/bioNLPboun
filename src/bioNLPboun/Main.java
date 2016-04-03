@@ -8,7 +8,8 @@ public class Main {
 	public static ArrayList<File> trainFiles = new ArrayList<File>(); // All File objects of training set
 	public static ArrayList<Document> trainDocs = new ArrayList<Document>(); // All Document objects of training set
 	public static ArrayList<Names> allNames = new ArrayList<Names>(); // All Names objects of names.dmp file.
-	
+	public static TreeMap<String, Names> allNamesMap = new TreeMap<>();
+	public static ArrayList<String> allNamesList = new ArrayList<>();
 	public static final int NEXT_N_WORDS = 4;
 	public static String[] shorteningsInNamesDump = { " sp.", " str.", " aff.", " cf.", " subgen.", " gen.", " nov."};
 
@@ -20,7 +21,7 @@ public class Main {
 		
 		
 		System.out.print("Reading documents...");
-		ConstructDocuments("BioNLP-ST-2016_BB-cat_train");
+		ConstructDocuments("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\BioNLP-ST-2016_BB-cat_train\\BioNLP-ST-2016_BB-cat_train");
 		System.out.println("Done!");
 		
 		System.out.print("Reading names.dmp file...");
@@ -40,7 +41,7 @@ public class Main {
 
 		System.out.println("Done!");
 		System.out.println("Evaluate matches with training set...");
-		Evaluator.compareA2Files("resources/BB-cat-output-a2-files", "BioNLP-ST-2016_BB-cat_train");
+		Evaluator.compareA2Files("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\resources\\BB-cat-output-a2-files", "C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\BioNLP-ST-2016_BB-cat_train\\BioNLP-ST-2016_BB-cat_train");
 		System.out.println("Done!");
 		
 		
@@ -223,7 +224,7 @@ public class Main {
 			name_txt = name_txt.replace("(", "");
 		while(name_txt.contains(")"))
 			name_txt = name_txt.replace(")", "");
-		name_txt = name_txt.trim().replaceAll("\\s+", " ");
+		name_txt = name_txt.trim().replace("\\s+", " ");
 		term.name_txt = name_txt;
 	}
 	
@@ -465,7 +466,7 @@ public class Main {
 	private static void ConstructNamesObjects(){
 
 		ArrayList<String> namesDmpFields = new ArrayList<String>();
-		namesDmpFields = ReadFields("taxdump/names.dmp");
+		namesDmpFields = ReadFields("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\taxdump\\names.dmp");
 		int indexWord = 0;
 		while(indexWord < namesDmpFields.size()){
 			int tax_id = Integer.parseInt(namesDmpFields.get(indexWord));
@@ -475,20 +476,21 @@ public class Main {
 
 			if(name_txt.charAt(0) == '\"' && name_txt.charAt(name_txt.length()-1) == '\"')
 			{
-				name_txt = name_txt.replaceAll("\"", "");
+				name_txt = name_txt.replace("\"", "");
 			}else if(name_txt.charAt(0) == '\'' && name_txt.charAt(name_txt.length()-1) == '\'')
 			{
-				name_txt = name_txt.replaceAll("'", "");
+				name_txt = name_txt.replace("'", "");
 			}
 
-            name_txt = name_txt.trim().replaceAll("\\s+", " ");
+            name_txt = name_txt.trim().replace("\\s+", " ");
 
 			Names namesObj = new Names(tax_id,name_txt,unique_name,name_class);
 			allNames.add(namesObj);
-
+            allNamesMap.put(name_txt, namesObj);
 			indexWord += 4;
 		}
 
+		allNamesList = new ArrayList<String>(allNamesMap.keySet());
 	}
 
 	private static void ProcessDocuments(ArrayList<Document> docs){
@@ -498,7 +500,7 @@ public class Main {
 			ArrayList<Term> candidates = new ArrayList<Term>();
 			HashMap<Term, String> originalCandidateVersions = new HashMap<>();
 			String text = doc.title + doc.paragraph;
-			text = text.trim().replaceAll("\\s+", " ");
+			text = text.trim().replace("\\s+", " ");
 			String pattern = "(?U)\\b\\p{Lu}\\p{L}*\\b";
 			String[] words = text.split("\\s");
             String word = "";
@@ -562,11 +564,11 @@ public class Main {
 	{
 		int lastIndexOfKesme =0;
 		word = word.trim();
-		word = word.replaceAll(",$", "");
-		word = word.replaceAll(";$", "");
+		word = word.replace(",$", "");
+		word = word.replace(";$", "");
 
 		/*if(!Arrays.asList(shorteningsInNamesDump).contains(word)) {
-			word = word.replaceAll("\\.$", "");
+			word = word.replace("\\.$", "");
 		}*/
 
 		if(word.contains("'")) {
@@ -578,11 +580,13 @@ public class Main {
 			}
 
 			//remove other kesmes
-			word = word.replaceAll("'", "");
+			word = word.replace("'", "");
 		}
 
 		return word;
 	}
+
+
 }
 
 

@@ -84,7 +84,7 @@ public class TestMethods {
 
     public static void ConstructA2Files(Document doc) throws IOException {
     	
-        File file = new File("resources/BB-cat-output-a2-files/"+ doc.file_name.substring(0,doc.file_name.length()-4) + ".a2");
+        File file = new File("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\resources\\BB-cat-output-a2-files\\"+ doc.file_name.substring(0,doc.file_name.length()-4) + ".a2");
         if (!file.exists()) {
         	file.createNewFile();
         }
@@ -114,60 +114,63 @@ public class TestMethods {
 		double editDistance = Double.POSITIVE_INFINITY;
 		int editDisFound = -1;
 		boolean isMatched = false;
-		Names currentName = new Names();
-		for(Names namesObject : Main.allNames){
-			currentName = namesObject;
-			// If original text already matches , match and return
-			if(namesObject.name_txt.equalsIgnoreCase(candidate.original_name_txt)){
-				isMatched = true;
-				editDistance = 0;
-				candidate.term_id = namesObject.tax_id;
-				break;
-			}
-			if(namesObject.name_txt.equalsIgnoreCase(candidate.name_txt)){
-				isMatched = true;
-				editDistance = 0;
-				candidate.term_id = namesObject.tax_id;
-				break;
-			}
-			// Check the first 2 words and last 2 words of a candidate that has 3 words in it.
-			String[] wordsInCandidate = candidate.name_txt.split(" ");
-			if(wordsInCandidate.length == 3){
-				String first2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
-				String last2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
-				if(namesObject.name_txt.equalsIgnoreCase(first2words)){
-					isMatched = true;
-					editDistance = 0;
-					candidate.term_id = namesObject.tax_id;
-					break;
-				}
-				if(namesObject.name_txt.equalsIgnoreCase(last2words)){
-					isMatched = true;
-					editDistance = 0;
-					candidate.term_id = namesObject.tax_id;
-					break;
-				}
-			}
-			
-			
-//			else
-//			{
-//				editDisFound = computeLevenshteinDistance(candidate.name_txt, namesObject.name_txt);
-//				if(editDistance > editDisFound)
-//				{
-//					editDistance = editDisFound;
-//					candidate.term_id = namesObject.tax_id;
-//				}
-//
-//			}
+		String candidateName = candidate.name_txt;
+
+
+		if (Main.allNamesList.contains(candidateName)) {
+			isMatched = true;
+			candidate.term_id = Main.allNamesMap.get(candidateName).tax_id;
+
+		}else if((Main.allNamesList.contains(candidate.original_name_txt)))
+		{
+			isMatched = true;
+			candidate.term_id = Main.allNamesMap.get(candidate.original_name_txt).tax_id;
 		}
-//		double errorRatio = editDistance / candidate.name_txt.length();
-//
-//		if(editDistance < 2 && errorRatio < 0.2)
-//		{
-//			isMatched = true;
-//		}
-		
+
+		else
+		{
+			for (String name : Main.allNamesList) {
+
+				Names namesObject = Main.allNamesMap.get(name);
+				// Check the first 2 words and last 2 words of a candidate that has 3 words in it.
+				String[] wordsInCandidate = candidate.name_txt.split(" ");
+				if(wordsInCandidate.length == 3){
+					String first2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
+					String last2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
+					if(namesObject.name_txt.equalsIgnoreCase(first2words)){
+						isMatched = true;
+						candidate.term_id = namesObject.tax_id;
+						break;
+					}
+					if(namesObject.name_txt.equalsIgnoreCase(last2words)){
+						isMatched = true;
+						candidate.term_id = namesObject.tax_id;
+						break;
+					}
+				}
+				double errorRatio = 0;
+
+				if(candidateName.charAt(0) == name.charAt(0) && candidateName.charAt(1) == name.charAt(1)) {
+					editDisFound = computeLevenshteinDistance(candidate.name_txt, name);
+
+					if (editDistance > editDisFound) {
+
+						editDistance = editDisFound;
+						errorRatio = editDistance / candidate.name_txt.length();
+
+						if(editDistance < 2 && errorRatio < 0.2)
+						{
+							isMatched = true;
+							candidate.term_id = Main.allNamesMap.get(name).tax_id;
+							break;
+						}
+					}
+				}
+
+
+			}
+		}
+
 		return isMatched;
 
 	}
