@@ -100,6 +100,8 @@ public class Main {
 		ArrayList<File> allFiles = new ArrayList<File>(Arrays.asList(folder.listFiles()));
 		int docID = 0; 
 		for(File file : allFiles){
+			
+			// READ .TXT FILES
 			if(file.getName().startsWith("BB-cat-") && file.getName().endsWith(".txt")){
 				trainFiles.add(file);
 				Document doc = new Document();
@@ -120,7 +122,8 @@ public class Main {
 				docID++;
 			}
 		}
-
+		
+		// READ .A1 FILES
 		for(File file : allFiles){
 
 			if(file.getName().startsWith("BB-cat-") && file.getName().endsWith(".a1")){
@@ -157,14 +160,18 @@ public class Main {
 										
 										if(term.isBacteria == true){
 											OPTIMIZE_PunctuationRemoval(term);
-																					
-											OPTIMIZE_HandleShortenings(term);
+																			
+											OPTIMIZE_ExpandAbbrevations(term,doc);
 											
-											OPTIMIZE_ExpandShortenings(term,doc);
+											OPTIMIZE_SpecialShortenings(term);
+											
+											
 											
 //											OPTIMIZE_SingleWordExtension(term,doc); // TO DO: No idea why it lowers the precision :D
 											
 											// TO DO: Need to handle writing errors like "Vibro parahaemolyticus" should be "Vibrio parahaemolyticus"
+											// TO DO: Bacille Calmette Guerin should be Bacille Calmette-Guerin
+										
 										}
 										
 										
@@ -220,7 +227,7 @@ public class Main {
 		term.name_txt = name_txt;
 	}
 	
-	private static void OPTIMIZE_HandleShortenings(Term term){
+	private static void OPTIMIZE_SpecialShortenings(Term term){
 		// OPTIMIZATION: Special shortenings removal 
 		// { "sp.", "str.", "aff.", "cf.", "subgen.", "gen.", "nov."};
 		// Handle  the case :   T3	Bacteria 38 59	Escherichia coli
@@ -252,42 +259,129 @@ public class Main {
 		}
 	}
 	
-	private static void OPTIMIZE_ExpandShortenings(Term term,Document doc){
+	private static void OPTIMIZE_ExpandAbbrevations(Term term,Document doc){
 
-		// OPTIMIZATION:  HANDLE "E. coli" cases here
-		// E. phlori should match "Escherichia coli" in the text.
+		// 2 cases here
+			// OPTIMIZATION 1 :
+				// Handle  the case :   T3	Bacteria 38 59	Escherichia coli
+				//						T4	Bacteria 64 75	E. coli
+				// E. coli should match "Escherichia coli".
+				// Also "E. coli" could have been "E.coli" need to handle that too.
+			// OPTIMIZATION 2 : 
+				// Handle  the case :   T3	Bacteria 38 59	Chlamydia trachomatis
+				//						T4	Bacteria 64 75	C. psittaci
+				// C. psittaci should match Chlamydia psittaci
+			
 		String[] wordsInTerm = term.name_txt.split(" ");
-		if(wordsInTerm[0].endsWith(".")){ 
-			if(wordsInTerm[1] != null){
-				for(Term a1term : doc.a1Terms){
-					if(a1term.isBacteria == true){
-						if(a1term.name_txt.contains(wordsInTerm[1])){ // If there is "Escherichia coli" before 
-							term.name_txt = a1term.name_txt; // Make "E. coli" -> "Escherichia coli"
-						}
-						else if(a1term.name_txt.charAt(0) == wordsInTerm[0].charAt(0) ){
-							if(a1term.name_txt.split(" ").length > 1 && wordsInTerm.length > 1){
-								// OPTIMIZATION 2 :
-								// Handle  the case :   T3	Bacteria 38 59	Chlamydia trachomatis
-								//						T4	Bacteria 64 75	C. psittaci
-								// C. psittaci should match Chlamydia psittaci
-								term.name_txt = a1term.name_txt.split(" ")[0] + " " + wordsInTerm[1];
+		if(wordsInTerm.length == 1 && wordsInTerm[0].contains(".")){
+			// Handle "H.phylori" here
+			if(wordsInTerm[0].indexOf(".") > 0 && wordsInTerm[0].indexOf(".") < wordsInTerm[0].length() -1){
+				String seperatedWord = wordsInTerm[0].substring(0, wordsInTerm[0].indexOf(".")) +
+						". " + wordsInTerm[0].substring(wordsInTerm[0].indexOf(".")+ 1 );
+				term.name_txt = seperatedWord;
+			}
+		}
+		
+		// HANDLE OPTIMIZATION 1
+		wordsInTerm = term.name_txt.split(" ");
+		for(int i = 0; i < wordsInTerm.length; i++){
+			if(wordsInTerm[i].endsWith(".") && Character.isUpperCase(wordsInTerm[i].charAt(0))){
+				if(wordsInTerm[i+1] != null){
+					// Here we have a term that has a shortening in its i'th index.
+					// For example "E. coli"
+					for(Term a1term : doc.a1Terms){
+						if(a1term.isBacteria == true){
+							
+							if(a1term.name_txt.contains(wordsInTerm[i+1])){ 
+								String[] wordsInA1Term = a1term.name_txt.split(" ");
+								for(int j = 0; j < wordsInA1Term.length; j++){
+
+									if(wordsInA1Term[j].equals(wordsInTerm[i+1])){
+										if(wordsInA1Term[j-1] != null){
+											if(!wordsInA1Term[j-1].equals(wordsInTerm[i]) && 
+												!wordsInA1Term[j-1].endsWith(".") && 
+												wordsInA1Term[j-1].substring(0,1).equalsIgnoreCase(wordsInTerm[i].substring(0, 1))){
+												
+//												System.out.println("$ Term_name_txt before:" + term.name_txt +
+//															" --> "+ a1term.name_txt);
+												
+												term.name_txt = term.name_txt.replace(wordsInTerm[i], wordsInA1Term[j-1]);
+												wordsInTerm = term.name_txt.split(" ");
+//												System.out.println("$ Term_name_txt after:" + term.name_txt);
+												break;
+											}
+											
+										}
+										
+									}
+								}
 							}
 						}
-						
-//							else {
-//								// If "coli" is not found in the term
-//								// Assume "E. coli" can match something like "E. chloea".
-//								String[] wordsInA1Term = a1term.name_txt.split(" ");
-//								if(wordsInA1Term.length > 1){
-//									if(wordsInA1Term[1].charAt(0) == candidateWords[1].charAt(0)){
-//										term.name_txt = a1term.name_txt; 
-//									}
-//								}
-//							}
 					}
+					
+					
 				}
 			}
 		}
+		
+		
+		
+		//HANDLE OPTIMIZATION 2
+		// Handle  the case :   T3	Bacteria 38 59	Chlamydia trachomatis
+		//						T4	Bacteria 64 75	C. psittaci
+		// C. psittaci should match Chlamydia psittaci
+		wordsInTerm = term.name_txt.split(" ");
+		for(int i = 0; i < wordsInTerm.length; i++){
+			if(wordsInTerm[i].endsWith(".") && Character.isUpperCase(wordsInTerm[i].charAt(0)) ){
+				if(wordsInTerm[i+1] != null){
+					// Here we have a term that has a shortening in its i'th index.
+					// For example "Non-O1 V. cholerae" i = 1 here
+					for(Term a1term : doc.a1Terms){
+						// a1Term : "Vibrio cholerae O"
+						if(a1term.isBacteria == true){
+							if(a1term.name_txt.substring(0,1).equalsIgnoreCase(wordsInTerm[i].substring(0, 1))){
+								if(a1term.name_txt.split(" ").length > 1 && i+1 < wordsInTerm.length){
+//									System.out.print("$ Apply: \"" + term.name_txt + "\" --> \""+ a1term.name_txt + "\"");
+									term.name_txt = term.name_txt.replace(wordsInTerm[i], a1term.name_txt.split(" ")[0]);
+									wordsInTerm = term.name_txt.split(" ");
+//									System.out.println("\t$ After: \"" + term.name_txt + "\"");
+									
+									break;
+								}
+							}
+							
+						}
+					}
+					
+					
+				}
+			}
+		}
+		
+//		// If "coli" is not found in the term
+//		// Assume "E. coli" can match something like "E. chloea".
+//		String[] wordsInA1Term = a1term.name_txt.split(" ");
+//		if(wordsInA1Term.length > 1){
+//			if(wordsInA1Term[1].charAt(0) == candidateWords[1].charAt(0)){
+//				term.name_txt = a1term.name_txt; 
+//			}
+//		}
+		
+//		for(Term a1term : doc.a1Terms){
+//		if(a1term.isBacteria == true){
+//			if(a1term.name_txt.charAt(0) == wordsInTerm[0].charAt(0) ){
+//				if(a1term.name_txt.split(" ").length > 1 && wordsInTerm.length > 1){
+//					// OPTIMIZATION 2 :
+//					// Handle  the case :   T3	Bacteria 38 59	Chlamydia trachomatis
+//					//						T4	Bacteria 64 75	C. psittaci
+//					// C. psittaci should match Chlamydia psittaci
+//					term.name_txt = a1term.name_txt.split(" ")[0] + " " + wordsInTerm[1];
+//				}
+//			}
+//		}
+//	}
+		
+		
 	}
 	
 	private static void OPTIMIZE_SingleWordExtension(Term term,Document doc){
@@ -300,7 +394,7 @@ public class Main {
 		if(wordsInTerm.length == 1 && wordsInTerm[0].length() >= 4){ 
 			for(Term a1term : doc.a1Terms){
 				if(a1term.isBacteria == true){
-					if(a1term.name_txt.contains(wordsInTerm[0])){ // If there is "Escherichia coli" before 
+					if(a1term.name_txt.equalsIgnoreCase(wordsInTerm[0])){ // If there is "Escherichia coli" before 
 						term.name_txt = a1term.name_txt; // Make "Escherichia" -> "Escherichia coli"
 					}
 				}

@@ -117,18 +117,39 @@ public class TestMethods {
 		Names currentName = new Names();
 		for(Names namesObject : Main.allNames){
 			currentName = namesObject;
-			if(namesObject.name_txt.equals(candidate.original_name_txt)){
+			// If original text already matches , match and return
+			if(namesObject.name_txt.equalsIgnoreCase(candidate.original_name_txt)){
 				isMatched = true;
 				editDistance = 0;
 				candidate.term_id = namesObject.tax_id;
 				break;
 			}
-			if(namesObject.name_txt.equals(candidate.name_txt)){
+			if(namesObject.name_txt.equalsIgnoreCase(candidate.name_txt)){
 				isMatched = true;
 				editDistance = 0;
 				candidate.term_id = namesObject.tax_id;
 				break;
 			}
+			// Check the first 2 words and last 2 words of a candidate that has 3 words in it.
+			String[] wordsInCandidate = candidate.name_txt.split(" ");
+			if(wordsInCandidate.length == 3){
+				String first2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
+				String last2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
+				if(namesObject.name_txt.equalsIgnoreCase(first2words)){
+					isMatched = true;
+					editDistance = 0;
+					candidate.term_id = namesObject.tax_id;
+					break;
+				}
+				if(namesObject.name_txt.equalsIgnoreCase(last2words)){
+					isMatched = true;
+					editDistance = 0;
+					candidate.term_id = namesObject.tax_id;
+					break;
+				}
+			}
+			
+			
 //			else
 //			{
 //				editDisFound = computeLevenshteinDistance(candidate.name_txt, namesObject.name_txt);
