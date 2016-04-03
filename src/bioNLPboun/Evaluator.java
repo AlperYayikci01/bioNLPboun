@@ -93,9 +93,11 @@ public class Evaluator {
 													if(doc.file_name.substring(0,doc.file_name.length()-4).equals(outFile.getName().substring(0,outFile.getName().length()-3))){
 														for(Term term : doc.a1Terms){
 															if(term.T_id == outTerm.T_id){
-																System.out.println("#ERROR: Term Name:\"" + 
-																		term.name_txt +"\" Predicted ID:" +
-																		outTerm.term_id + " Real ID:" + testTerm.term_id);
+																System.out.println("#ERROR: Original Term Name:\"" + 
+																		term.original_name_txt +"\" Predicted Name:\""
+																				+ term.name_txt + "\" Predicted ID:" +
+																		outTerm.term_id + " Real ID:" + 
+																		testTerm.term_id + " Doc Name: " + outFile.getName());
 																break;
 															}
 															

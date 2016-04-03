@@ -11,6 +11,7 @@ public class Document {
 	public ArrayList<Term> candidates;
 	public ArrayList<Term> a1Terms;
 	public HashMap<Term, String> originalCandidateVersions;
+	public HashMap<String, String> acronyms = new HashMap<String, String>();
 	
 	Document(){
 		this.doc_id = -1;
@@ -19,6 +20,7 @@ public class Document {
 		this.paragraph = "";
 		this.a1Terms = new ArrayList<Term>();
 		this.candidates = new ArrayList<Term>();
+		this.acronyms = new HashMap<String, String>();
 	}
 
 	Document(int doc_id){
@@ -28,15 +30,17 @@ public class Document {
 		this.paragraph = "";
 		this.candidates = new ArrayList<Term>();
 		this.a1Terms = new ArrayList<Term>();
+		this.acronyms = new HashMap<String, String>();
 	}
 	
-	Document(int doc_id, String file_name, String title, String paragraph, ArrayList<Term> candidates, ArrayList<Term> a1Terms){
+	Document(int doc_id, String file_name, String title, String paragraph, ArrayList<Term> candidates, ArrayList<Term> a1Terms, HashMap<String, String> acronyms){
 		this.doc_id = doc_id;
 		this.file_name = file_name;
 		this.title = title;
 		this.paragraph = paragraph;
 		this.candidates = candidates;
 		this.a1Terms = a1Terms;
+		this.acronyms = acronyms;
 	}
 	
 	@Override

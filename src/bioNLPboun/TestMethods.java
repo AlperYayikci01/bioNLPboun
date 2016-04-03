@@ -117,6 +117,12 @@ public class TestMethods {
 		Names currentName = new Names();
 		for(Names namesObject : Main.allNames){
 			currentName = namesObject;
+			if(namesObject.name_txt.equals(candidate.original_name_txt)){
+				isMatched = true;
+				editDistance = 0;
+				candidate.term_id = namesObject.tax_id;
+				break;
+			}
 			if(namesObject.name_txt.equals(candidate.name_txt)){
 				isMatched = true;
 				editDistance = 0;
@@ -140,6 +146,7 @@ public class TestMethods {
 //		{
 //			isMatched = true;
 //		}
+		
 		return isMatched;
 
 	}
