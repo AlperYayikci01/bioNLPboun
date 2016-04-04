@@ -21,7 +21,7 @@ public class Main {
 		
 		
 		System.out.print("Reading documents...");
-		ConstructDocuments("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\BioNLP-ST-2016_BB-cat_train\\BioNLP-ST-2016_BB-cat_train");
+		ConstructDocuments("BioNLP-ST-2016_BB-cat_train");
 		System.out.println("Done!");
 		
 		System.out.print("Reading names.dmp file...");
@@ -41,7 +41,7 @@ public class Main {
 
 		System.out.println("Done!");
 		System.out.println("Evaluate matches with training set...");
-		Evaluator.compareA2Files("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\resources\\BB-cat-output-a2-files", "C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\BioNLP-ST-2016_BB-cat_train\\BioNLP-ST-2016_BB-cat_train");
+		Evaluator.compareA2Files("resources/BB-cat-output-a2-files", "BioNLP-ST-2016_BB-cat_train");
 		System.out.println("Done!");
 		
 		
@@ -153,11 +153,11 @@ public class Main {
 										term.end_pos = Integer.parseInt(wordsInBacteria[wordsInBacteria.length-1]);
 										term.original_name_txt = wordsInLine[2];
 										
-										term.original_name_txt = Character.toUpperCase(term.original_name_txt.charAt(0)) + term.original_name_txt.substring(1);
+										term.original_name_txt = term.original_name_txt.toLowerCase();
 										
 										term.name_txt = wordsInLine[2];
 										
-										term.name_txt = Character.toUpperCase(term.name_txt.charAt(0)) + term.name_txt.substring(1);
+										term.name_txt = term.name_txt.toLowerCase();
 										
 										if(term.isBacteria == true){
 											OPTIMIZE_PunctuationRemoval(term);
@@ -168,7 +168,6 @@ public class Main {
 											
 											
 											
-//											OPTIMIZE_SingleWordExtension(term,doc); // TO DO: No idea why it lowers the precision :D
 											
 											// TO DO: Need to handle writing errors like "Vibro parahaemolyticus" should be "Vibrio parahaemolyticus"
 											// TO DO: Bacille Calmette Guerin should be Bacille Calmette-Guerin
@@ -185,15 +184,11 @@ public class Main {
 								}
 							}
 							// OPTIMIZATION 2:  HANDLE ACRONYMS LIKE "MRSA" cases here.
+							OPTIMIZE_SingleWordExtension(doc); 
+							
 							OPTIMIZE_MatchAcronyms(doc);
-							
-							
-								
-							// OPTIMIZATION 3:
-							// Handle  the case :   T3	Bacteria 38 59	Escherichia coli
-							//						T4	Bacteria 64 75	Escherichia coli O8:K88
-							// Escherichia coli O8:K88 should match Escherichia coli
-//							removeLongPhrases(doc);
+		
+							handleLongPhrases(doc);
 
 							buf.close();
 						} catch (Exception e) {
@@ -231,9 +226,13 @@ public class Main {
 	private static void OPTIMIZE_SpecialShortenings(Term term){
 		// OPTIMIZATION: Special shortenings removal 
 		// { "sp.", "str.", "aff.", "cf.", "subgen.", "gen.", "nov."};
+		// "spp.", "spp" , "strain"
 		// Handle  the case :   T3	Bacteria 38 59	Escherichia coli
 		//						T4	Bacteria 64 75	Escherichia (sp.) coli
 		// Escherichia (sp.) coli should match Escherichia coli
+		
+		String[] shorteningsToRemove = { "sp.", "spp.", "spp", "subsp.", "strain", "str.", "aff.", "cf.", "subgen.", "gen.", "nov."};
+		
 		String[] wordsInTerm = term.name_txt.split(" ");
 		for(int i = 0; i < wordsInTerm.length; i++){
 			if(wordsInTerm[i].contains(":")){
@@ -241,7 +240,46 @@ public class Main {
 				wordToRemove = wordToRemove.substring(wordToRemove.indexOf(":"), wordToRemove.length());
 				term.name_txt = term.name_txt.replace(wordToRemove, "");
 			}
-			if(wordsInTerm[i].equalsIgnoreCase("Type")){
+			wordsInTerm = term.name_txt.split(" ");
+			// "eschericia coli type a" should match "eschericia coli a"
+			if(wordsInTerm[i].equalsIgnoreCase("type")){
+//				System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
+				term.name_txt = term.name_txt.replace("type ", "");
+//				System.out.println("\"" + term.name_txt + "\"");
+			}
+			wordsInTerm = term.name_txt.split(" ");
+			// Remove special shortenings
+			for(int j = 0; j < shorteningsToRemove.length; j++){
+				String shortening = shorteningsToRemove[j];
+				
+//				if(wordsInTerm[i].contains(shortening)){
+//					System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
+//					if(i + 1 <= wordsInTerm.length -1){
+//						// If shortening is not at the end of the term, remove what comes next after the shortening.
+//						// Not sure doing this is optimal !!
+//						// especailly if we need the info to separate its sub types.
+//						System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
+//						term.name_txt = term.name_txt.substring(0, term.name_txt.indexOf(shortening)-1);
+//						wordsInTerm = term.name_txt.split(" ");
+//						System.out.println("\"" + term.name_txt + "\"");
+//						continue;
+//					}
+//					
+//				}
+				
+				if(term.name_txt.contains(shortening)){
+//					System.out.print("£SPECIAL \"" + term.name_txt + "\" --> ");
+					if(term.name_txt.contains(" " + shortening)){
+						term.name_txt = term.name_txt.replace(" " + shortening, ""); // remove sp.
+						wordsInTerm = term.name_txt.split(" ");
+					}
+					else if(term.name_txt.contains(shortening + " ")){
+						term.name_txt = term.name_txt.replace(shortening + " ", ""); // remove sp.
+						wordsInTerm = term.name_txt.split(" ");
+					}
+//					System.out.println("\"" + term.name_txt + "\"");
+				}
+				
 				
 			}
 			
@@ -286,36 +324,67 @@ public class Main {
 		// HANDLE OPTIMIZATION 1
 		wordsInTerm = term.name_txt.split(" ");
 		for(int i = 0; i < wordsInTerm.length; i++){
-			if(wordsInTerm[i].endsWith(".") && Character.isUpperCase(wordsInTerm[i].charAt(0))){
-				if(wordsInTerm[i+1] != null){
+			if(wordsInTerm[i].endsWith(".")){
+				if(i+1 < wordsInTerm.length){
 					// Here we have a term that has a shortening in its i'th index.
 					// For example "E. coli"
-					for(Term a1term : doc.a1Terms){
-						if(a1term.isBacteria == true){
-							
-							if(a1term.name_txt.contains(wordsInTerm[i+1])){ 
-								String[] wordsInA1Term = a1term.name_txt.split(" ");
-								for(int j = 0; j < wordsInA1Term.length; j++){
+					int term_T_id = term.T_id;
+					for(int T_index = term_T_id -1 ; T_index > 0; T_index--){
+						for(Term a1term : doc.a1Terms){
+							if(a1term.T_id == T_index){
+								if(a1term.isBacteria == true){
+									if(a1term.name_txt.contains(wordsInTerm[i+1])){
 
-									if(wordsInA1Term[j].equals(wordsInTerm[i+1])){
-										if(wordsInA1Term[j-1] != null){
+										String[] wordsInA1Term = a1term.name_txt.split(" ");
+										int j = -1;
+										for(int index = 0; index < wordsInA1Term.length; index++){
+											if(wordsInA1Term[index].equals(wordsInTerm[i+1])){
+												j = index;
+											}
+										}
+												
+												
+										if(j-1 >= 0){
 											if(!wordsInA1Term[j-1].equals(wordsInTerm[i]) && 
 												!wordsInA1Term[j-1].endsWith(".") && 
 												wordsInA1Term[j-1].substring(0,1).equalsIgnoreCase(wordsInTerm[i].substring(0, 1))){
 												
-//												System.out.println("$ Term_name_txt before:" + term.name_txt +
-//															" --> "+ a1term.name_txt);
+												if(term.name_txt.contains(wordsInA1Term[j-1])){
+													// OPTIMIZATION : Handle lactobacillus lb. gasseri case here.
+													if(term.name_txt.contains(" " + wordsInTerm[i]))
+														term.name_txt = term.name_txt.replace(" " + wordsInTerm[i], ""); // remove lb.
+													else if(term.name_txt.contains(wordsInTerm[i] + " "))
+														term.name_txt = term.name_txt.replace(wordsInTerm[i] + " ", ""); // remove lb.
+//													System.out.println("%1" + term.name_txt);
+													break;
+												}
 												
+//												System.out.println("$before \"" + term.name_txt +
+//															"\" : \""+ a1term.name_txt + "\"");
+
 												term.name_txt = term.name_txt.replace(wordsInTerm[i], wordsInA1Term[j-1]);
 												wordsInTerm = term.name_txt.split(" ");
-//												System.out.println("$ Term_name_txt after:" + term.name_txt);
+												
+//												System.out.println("$after \"" + term.name_txt + "\"");
+												
+												//OPTIMIZATION : Handle "E.coli" match with "escherichia coli o8" case here.
+												if(wordsInTerm.length == 2 && a1term.name_txt.split(" ").length > 2 && a1term.name_txt.startsWith(term.name_txt)){
+//													System.out.println("£before \"" + term.name_txt +
+//															"\" : \""+ a1term.name_txt + "\"");
+													term.name_txt = a1term.name_txt;
+													wordsInTerm = term.name_txt.split(" ");
+//													System.out.println("£after \"" + term.name_txt + "\"");
+												}
+												
+
 												break;
 											}
 											
 										}
-										
+												
 									}
 								}
+								break;
 							}
 						}
 					}
@@ -333,8 +402,8 @@ public class Main {
 		// C. psittaci should match Chlamydia psittaci
 		wordsInTerm = term.name_txt.split(" ");
 		for(int i = 0; i < wordsInTerm.length; i++){
-			if(wordsInTerm[i].endsWith(".") && Character.isUpperCase(wordsInTerm[i].charAt(0)) ){
-				if(wordsInTerm[i+1] != null){
+			if(wordsInTerm[i].endsWith(".")){
+				if(i+1 < wordsInTerm.length){
 					// Here we have a term that has a shortening in its i'th index.
 					// For example "Non-O1 V. cholerae" i = 1 here
 					for(Term a1term : doc.a1Terms){
@@ -342,6 +411,17 @@ public class Main {
 						if(a1term.isBacteria == true){
 							if(a1term.name_txt.substring(0,1).equalsIgnoreCase(wordsInTerm[i].substring(0, 1))){
 								if(a1term.name_txt.split(" ").length > 1 && i+1 < wordsInTerm.length){
+									
+									if(term.name_txt.contains(a1term.name_txt.split(" ")[0])){
+										// OPTIMIZATION : Handle lactobacillus lb. gasseri case here.
+										if(term.name_txt.contains(" " + wordsInTerm[i]))
+											term.name_txt = term.name_txt.replace(" " + wordsInTerm[i], ""); // remove lb.
+										else if(term.name_txt.contains(wordsInTerm[i] + " "))
+											term.name_txt = term.name_txt.replace(wordsInTerm[i] + " ", ""); // remove lb.
+//										System.out.println("%2" + term.name_txt);
+										break;
+									}
+									
 //									System.out.print("$ Apply: \"" + term.name_txt + "\" --> \""+ a1term.name_txt + "\"");
 									term.name_txt = term.name_txt.replace(wordsInTerm[i], a1term.name_txt.split(" ")[0]);
 									wordsInTerm = term.name_txt.split(" ");
@@ -385,18 +465,28 @@ public class Main {
 		
 	}
 	
-	private static void OPTIMIZE_SingleWordExtension(Term term,Document doc){
+	private static void OPTIMIZE_SingleWordExtension(Document doc){
 		
 		// OPTIMIZATION: Single word extension 
 		// Handle  the case :   T3	Bacteria 38 59	Escherichia coli
 		//						T4	Bacteria 64 75	Escherichia
 		// Escherichia should match Escherichia coli
-		String[] wordsInTerm = term.name_txt.split(" ");
-		if(wordsInTerm.length == 1 && wordsInTerm[0].length() >= 4){ 
-			for(Term a1term : doc.a1Terms){
-				if(a1term.isBacteria == true){
-					if(a1term.name_txt.equalsIgnoreCase(wordsInTerm[0])){ // If there is "Escherichia coli" before 
-						term.name_txt = a1term.name_txt; // Make "Escherichia" -> "Escherichia coli"
+		for(Term term : doc.a1Terms){
+			String[] wordsInTerm = term.name_txt.split(" ");
+			if(wordsInTerm.length == 1 && wordsInTerm[0].length() >= 4){ 
+				for(Term a1term : doc.a1Terms){
+					// TO DO: Need to handle T9	Bacteria 151 182	Lactobacillus (Lb.) gasseri K 7
+					// 						 T17	Bacteria 334 346	Lactobacilli
+					// Need edit distance here when contains fails.
+					
+					
+					
+					if(a1term.isBacteria == true){
+						if(a1term.name_txt.contains(wordsInTerm[0]) && !wordsInTerm[0].equals(a1term.name_txt)){ // If there is "Escherichia coli" before 
+//							System.out.println("$ SINGLE: \"" + term.name_txt + "\" --> \"" + a1term.name_txt + "\"");
+							term.name_txt = a1term.name_txt; // Make "Escherichia" -> "Escherichia coli"
+							break;
+						}
 					}
 				}
 			}
@@ -438,24 +528,38 @@ public class Main {
 
 	}
 	
-	private static void removeLongPhrases(Document doc){
+	private static void handleLongPhrases(Document doc){
 		
-		// OPTIMIZATION 3:
-		// Handle  the case :   T3	Bacteria 38 59	Escherichia coli
-		//						T4	Bacteria 64 75	Escherichia coli O8:K88
-		// Escherichia coli O8:K88 should match Escherichia coli
-		
+		// OPTIMIZATION:
+		// Handle  the case :   T3	Bacteria 64 75	Escherichia coli K 7
+		//						
+		// Escherichia coli K 7 should match Escherichia coli K7
 		for(Term term : doc.a1Terms){
-			String[] wordsInTerm = term.name_txt.split(" ");
-			if(wordsInTerm.length > 2 && term.isBacteria == true){
-				term.name_txt = wordsInTerm[0] + " " + wordsInTerm[1];
-				
-				for(Term a1term : doc.a1Terms){
-					if(a1term.isBacteria == true){
-						String firstTwoWords = wordsInTerm[0] + " " + wordsInTerm[1];
-						if(a1term.name_txt.equals(firstTwoWords)){
-							term.name_txt = a1term.name_txt;
+			if(term.isBacteria == true){
+				String[] wordsInTerm = term.name_txt.split(" ");
+				for(int i = 0; i < wordsInTerm.length ; i++){
+					if( i + 1 == wordsInTerm.length )
+						break;
+					 // i = 2
+					if(wordsInTerm[i].length() == 1 && wordsInTerm[i+1].length() == 1 ){
+						String mergedName = "";
+						for(int j = 0 ; j < wordsInTerm.length ; j++){
+							if(j == i){
+								mergedName += wordsInTerm[i] + wordsInTerm[i+1];
+								j = i+1;
+								if(j + 1 < wordsInTerm.length){
+									mergedName += " ";
+								}else{
+									break;
+								}
+							}else{
+								mergedName += wordsInTerm[j] + " ";
+							}
+
 						}
+//						System.out.println("$ " + doc.file_name);
+//						System.out.println("$ \"" + term.name_txt + "\" --> \"" + mergedName + "\"");
+						term.name_txt = mergedName;
 					}
 				}
 			}
@@ -466,7 +570,7 @@ public class Main {
 	private static void ConstructNamesObjects(){
 
 		ArrayList<String> namesDmpFields = new ArrayList<String>();
-		namesDmpFields = ReadFields("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\taxdump\\names.dmp");
+		namesDmpFields = ReadFields("taxdump/names.dmp");
 		int indexWord = 0;
 		while(indexWord < namesDmpFields.size()){
 			int tax_id = Integer.parseInt(namesDmpFields.get(indexWord));
@@ -483,6 +587,8 @@ public class Main {
 			}
 
             name_txt = name_txt.trim().replace("\\s+", " ");
+            
+            name_txt = name_txt.toLowerCase();
 
 			Names namesObj = new Names(tax_id,name_txt,unique_name,name_class);
 			allNames.add(namesObj);

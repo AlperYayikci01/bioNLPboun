@@ -37,7 +37,7 @@ public class TestMethods {
     	// Find matched candidates
     	for(int i = doc.candidates.size()-1; i >= 0; i--){
     		Term candidate = doc.candidates.get(i);
-    		boolean isMatched = searchInNames(candidate);
+    		boolean isMatched = searchInNames(candidate,doc);
     		
 			if(isMatched)
 				matched_candidates.add(candidate);
@@ -56,7 +56,7 @@ public class TestMethods {
 		    			continue;
 		    		}else{
 		    			Term next_candidate = doc.candidates.get(i-n);
-		    			isMatched = searchInNames(next_candidate);
+		    			isMatched = searchInNames(next_candidate,doc);
 		    			if(isMatched)
 		    				matched_candidates.add(next_candidate);
 		    			i--;
@@ -84,7 +84,7 @@ public class TestMethods {
 
     public static void ConstructA2Files(Document doc) throws IOException {
     	
-        File file = new File("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\resources\\BB-cat-output-a2-files\\"+ doc.file_name.substring(0,doc.file_name.length()-4) + ".a2");
+        File file = new File("resources/BB-cat-output-a2-files/"+ doc.file_name.substring(0,doc.file_name.length()-4) + ".a2");
         if (!file.exists()) {
         	file.createNewFile();
         }
@@ -93,7 +93,7 @@ public class TestMethods {
     	for(Term term : doc.a1Terms){
     		String termID = String.valueOf(term.term_id);
     		if(term.isBacteria == true){
-    			if(searchInNames(term)){
+    			if(searchInNames(term,doc)){
     				termID = String.valueOf(term.term_id);;
     			}
     		}
@@ -109,22 +109,21 @@ public class TestMethods {
     	writer_a2.close();
     }
 
-	public static boolean searchInNames(Term candidate){
+	public static boolean searchInNames(Term candidate,Document doc){
 
 		double editDistance = Double.POSITIVE_INFINITY;
 		int editDisFound = -1;
 		boolean isMatched = false;
 		String candidateName = candidate.name_txt;
-
-
-		if (Main.allNamesList.contains(candidateName)) {
-			isMatched = true;
-			candidate.term_id = Main.allNamesMap.get(candidateName).tax_id;
-
-		}else if((Main.allNamesList.contains(candidate.original_name_txt)))
+		if((Main.allNamesList.contains(candidate.original_name_txt)))
 		{
 			isMatched = true;
 			candidate.term_id = Main.allNamesMap.get(candidate.original_name_txt).tax_id;
+		}
+		else if (Main.allNamesList.contains(candidateName)) {
+			isMatched = true;
+			candidate.term_id = Main.allNamesMap.get(candidateName).tax_id;
+
 		}
 
 		else
@@ -136,7 +135,7 @@ public class TestMethods {
 				String[] wordsInCandidate = candidate.name_txt.split(" ");
 				if(wordsInCandidate.length == 3){
 					String first2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
-					String last2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
+					String last2words = wordsInCandidate[1] + " " + wordsInCandidate[2];
 					if(namesObject.name_txt.equalsIgnoreCase(first2words)){
 						isMatched = true;
 						candidate.term_id = namesObject.tax_id;
@@ -170,7 +169,49 @@ public class TestMethods {
 
 			}
 		}
-
+		if(isMatched == false){
+			int candidate_T_id = candidate.T_id;
+			for(int i = candidate_T_id -1 ; i > 0; i--){
+				// Assume first closest bacteria found represents for the not matched bacteria in the text.
+				for(Term a1Term : doc.a1Terms){
+					if(a1Term.T_id == i){
+						if(a1Term.isBacteria == true && !a1Term.name_txt.equals(candidate.name_txt)){
+								if(a1Term.term_id != 2){ // If previous term already matched
+//									System.out.println(doc.file_name);
+//									System.out.println("$Failed: \"" + candidate.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
+//									System.out.println("$Acronym: \n" + term + "\n " + a1Term);
+									candidate.term_id = a1Term.term_id;
+									isMatched = true;
+									break;
+								}
+						}
+						break;
+					}
+				}
+				
+			}
+			// if it doesnt match the bacteries before it, try matching with bacteries after it.
+			if(isMatched == false && candidate_T_id + 1 < doc.a1Terms.size()){
+				for(int i = candidate_T_id + 1 ; i < doc.a1Terms.size(); i++){
+					// Assume first closest bacteria found represents for the not matched bacteria in the text.
+					for(Term a1Term : doc.a1Terms){
+						if(a1Term.T_id == i){
+							if(a1Term.isBacteria == true && !a1Term.name_txt.equals(candidate.name_txt)){
+									if(a1Term.term_id != 2){ // If previous term already matched
+										System.out.println(doc.file_name);
+										System.out.println("$Failed: \"" + candidate.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
+//										System.out.println("$Acronym: \n" + term + "\n " + a1Term);
+										candidate.term_id = a1Term.term_id;
+										isMatched = true;
+										break;
+									}
+							}
+							break;
+						}
+					}
+				}
+			}
+		}
 		return isMatched;
 
 	}
