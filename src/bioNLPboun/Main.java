@@ -169,7 +169,7 @@ public class Main {
 											
 											
 											
-											// TO DO: Need to handle writing errors like "Vibro parahaemolyticus" should be "Vibrio parahaemolyticus"
+											// TO DO: Need to handle writing errors like "Vibro parahaemolyticus" should be "Vibrio parahaemolyticus". done
 											// TO DO: Bacille Calmette Guerin should be Bacille Calmette-Guerin
 										
 										}
@@ -618,14 +618,23 @@ public class Main {
 				name_txt = name_txt.replace("'", "");
 			}
 
-            name_txt = name_txt.trim().replace("\\s+", " ");
+          //  name_txt = name_txt.trim().replace("\\s+", " ");
             
             name_txt = name_txt.toLowerCase();
 
 			Names namesObj = new Names(tax_id,name_txt,unique_name,name_class);
 		//	allNames.add(namesObj);
             allNamesMap.put(name_txt, namesObj);
+
+			// handle the names containing "-"
+			if(name_txt.contains(("-")))
+			{
+				String name_txt1 = name_txt.replace('-', ' ');
+				Names namesObj1 = new Names(tax_id, name_txt1, unique_name, name_class);
+				allNamesMap.put(name_txt1, namesObj1);
+			}
 			indexWord += 4;
+
 		}
 
 		allNamesList = new ArrayList<String>(allNamesMap.keySet());

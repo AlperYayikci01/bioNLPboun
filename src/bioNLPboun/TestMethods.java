@@ -115,13 +115,15 @@ public class TestMethods {
 		int editDisFound = -1;
 		boolean isMatched = false;
 		String candidateName = candidate.name_txt;
-		if((Main.allNamesList.contains(candidate.original_name_txt)))
+		if(Main.allNamesMap.get(candidate.original_name_txt) !=null)
 		{
 			isMatched = true;
+			candidate.isMatched = true;
 			candidate.term_id = Main.allNamesMap.get(candidate.original_name_txt).tax_id;
 		}
-		else if (Main.allNamesList.contains(candidateName)) {
+		else if (Main.allNamesMap.get(candidateName) !=null) {
 			isMatched = true;
+			candidate.isMatched = true;
 			candidate.term_id = Main.allNamesMap.get(candidateName).tax_id;
 
 		}
@@ -138,11 +140,13 @@ public class TestMethods {
 					String last2words = wordsInCandidate[1] + " " + wordsInCandidate[2];
 					if(namesObject.name_txt.equalsIgnoreCase(first2words)){
 						isMatched = true;
+						candidate.isMatched = true;
 						candidate.term_id = namesObject.tax_id;
 						break;
 					}
 					if(namesObject.name_txt.equalsIgnoreCase(last2words)){
 						isMatched = true;
+						candidate.isMatched = true;
 						candidate.term_id = namesObject.tax_id;
 						break;
 					}
@@ -160,6 +164,7 @@ public class TestMethods {
 						if(editDistance < 2 && errorRatio < 0.2)
 						{
 							isMatched = true;
+							candidate.isMatched = true;
 							candidate.term_id = Main.allNamesMap.get(name).tax_id;
 							break;
 						}
@@ -169,8 +174,30 @@ public class TestMethods {
 
 			}
 		}
-		if(isMatched == false){
-			int candidate_T_id = candidate.T_id;
+		if(isMatched && !candidate.name_txt.contains(" ")) //chlamydia gibi tek kelimelileri dosyada ona çok benzer bir bakteri(daha once match edilmiş) var ise onunla eşle.
+		{
+			for(int i = candidate.T_id -1 ; i > 0; i--){
+				for(Term a1Term : doc.a1Terms){
+					String[] a1term = a1Term.name_txt.split(" ");
+					if(a1Term.T_id == i){
+						if(a1Term.isBacteria == true && a1Term.isMatched && a1term.length>1 && !a1Term.name_txt.equals(candidate.name_txt) ){
+
+							int distance = computeLevenshteinDistance(candidate.name_txt, a1term[0]);
+
+							if(distance < 2)
+							{
+								candidate.term_id = a1Term.term_id;
+								break;
+							}
+
+						}
+						break;
+					}
+				}
+
+			}
+		}
+		else{int candidate_T_id = candidate.T_id;
 			for(int i = candidate_T_id -1 ; i > 0; i--){
 				// Assume first closest bacteria found represents for the not matched bacteria in the text.
 				for(Term a1Term : doc.a1Terms){

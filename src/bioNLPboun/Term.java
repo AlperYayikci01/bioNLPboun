@@ -9,6 +9,7 @@ public class Term {
 	public int end_pos;
 	public String name_txt;
 	public String original_name_txt;
+	public boolean isMatched;
 
 	Term(){
 		this.isBacteria = true;
@@ -19,6 +20,7 @@ public class Term {
 		this.end_pos = 0;
 		this.name_txt = "";
 		this.original_name_txt = "";
+		this.isMatched = false;
 	}
 
 	Term(int T_id,int N_id, int term_id){
@@ -30,6 +32,7 @@ public class Term {
 		this.end_pos = 0;
 		this.name_txt = "";
 		this.original_name_txt = "";
+		this.isMatched = false;
 	}
 	
 	Term(boolean isBacteria, int T_id, int N_id, int term_id, int start_pos, int end_pos, String name_txt, String original_name_txt){
