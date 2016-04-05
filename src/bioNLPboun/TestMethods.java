@@ -89,16 +89,19 @@ public class TestMethods {
         	file.createNewFile();
         }
         PrintWriter writer_a2 = new PrintWriter(file);
+        for(Term term : doc.a1Terms){
+        	if(term.isBacteria == true){
+    			searchInNames(term,doc);
+    		}
+        }
     	int N_id = 1;
     	for(Term term : doc.a1Terms){
-    		String termID = String.valueOf(term.term_id);
-    		if(term.isBacteria == true){
-    			if(searchInNames(term,doc)){
-    				termID = String.valueOf(term.term_id);;
-    			}
+    		if(term.term_id == 2 && term.isBacteria == true){
+    			matchNonMatchedWithAlreadyMatched(term,doc);
     		}
+    		String termID = String.valueOf(term.term_id);
 			String isBacteria = "NCBI_Taxonomy";
-			if(term.isBacteria == false){
+			if(term.isHabitat == true){
 				isBacteria = "OntoBiotope";
 				termID = "OBT:000000";
 			}
@@ -115,38 +118,59 @@ public class TestMethods {
 		int editDisFound = -1;
 		boolean isMatched = false;
 		String candidateName = candidate.name_txt;
-		if((Main.allNamesList.contains(candidate.original_name_txt)))
+		String[] wordsInCandidate = candidate.name_txt.split(" ");
+		Names names_original_name_txt;
+		Names names_name_txt;
+		
+		if((names_original_name_txt = Main.allNamesMap.get(candidate.original_name_txt)) != null)
 		{
 			isMatched = true;
-			candidate.term_id = Main.allNamesMap.get(candidate.original_name_txt).tax_id;
+			candidate.term_id = names_original_name_txt.tax_id;
+			names_original_name_txt = null;
+			return true;
 		}
-		else if (Main.allNamesList.contains(candidateName)) {
+		else if ((names_name_txt = Main.allNamesMap.get(candidateName)) != null) {
 			isMatched = true;
-			candidate.term_id = Main.allNamesMap.get(candidateName).tax_id;
+			candidate.term_id = names_name_txt.tax_id;
+			names_name_txt = null;
+			return true;
 
+		} else if(wordsInCandidate.length == 3){
+			// Check the 2 words combinations of the candidate that has 3 words in it.
+				
+				String first2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
+				String last2words = wordsInCandidate[1] + " " + wordsInCandidate[2];
+				String firstAndLastWords = wordsInCandidate[0] + " " + wordsInCandidate[2];
+				Names names_first2words;
+				Names names_last2words;
+				Names names_firstAndLastWords;
+				if((names_first2words = Main.allNamesMap.get(first2words)) != null)
+				{
+					isMatched = true;
+					candidate.term_id = names_first2words.tax_id;
+					names_first2words = null;
+					return true;
+				}
+				if((names_last2words = Main.allNamesMap.get(last2words)) != null)
+				{
+					isMatched = true;
+					candidate.term_id = names_last2words.tax_id;
+					names_last2words = null;
+					return true;
+				}
+				if((names_firstAndLastWords = Main.allNamesMap.get(firstAndLastWords)) != null)
+				{
+					isMatched = true;
+					candidate.term_id = names_firstAndLastWords.tax_id;
+					names_firstAndLastWords = null;
+					return true;
+				}
 		}
 
 		else
 		{
 			for (String name : Main.allNamesList) {
 
-				Names namesObject = Main.allNamesMap.get(name);
-				// Check the first 2 words and last 2 words of a candidate that has 3 words in it.
-				String[] wordsInCandidate = candidate.name_txt.split(" ");
-				if(wordsInCandidate.length == 3){
-					String first2words = wordsInCandidate[0] + " " + wordsInCandidate[1];
-					String last2words = wordsInCandidate[1] + " " + wordsInCandidate[2];
-					if(namesObject.name_txt.equalsIgnoreCase(first2words)){
-						isMatched = true;
-						candidate.term_id = namesObject.tax_id;
-						break;
-					}
-					if(namesObject.name_txt.equalsIgnoreCase(last2words)){
-						isMatched = true;
-						candidate.term_id = namesObject.tax_id;
-						break;
-					}
-				}
 				double errorRatio = 0;
 
 				if(candidateName.charAt(0) == name.charAt(0) && candidateName.charAt(1) == name.charAt(1)) {
@@ -169,18 +193,44 @@ public class TestMethods {
 
 			}
 		}
-		if(isMatched == false){
-			int candidate_T_id = candidate.T_id;
-			for(int i = candidate_T_id -1 ; i > 0; i--){
-				// Assume first closest bacteria found represents for the not matched bacteria in the text.
-				for(Term a1Term : doc.a1Terms){
-					if(a1Term.T_id == i){
-						if(a1Term.isBacteria == true && !a1Term.name_txt.equals(candidate.name_txt)){
-								if(a1Term.term_id != 2){ // If previous term already matched
+		return isMatched;
+
+	}
+
+	public static boolean matchNonMatchedWithAlreadyMatched(Term term, Document doc){
+		boolean isMatched = false;
+		int term_T_id = term.T_id;
+		for(int i = term_T_id -1 ; i > 0; i--){
+			// Assume first closest bacteria found represents for the not matched bacteria in the text.
+			for(Term a1Term : doc.a1Terms){
+				if(a1Term.T_id == i){
+					if(a1Term.isBacteria == true && !a1Term.name_txt.equals(term.name_txt)){
+							if(a1Term.term_id != 2){ // If previous term already matched
 //									System.out.println(doc.file_name);
 //									System.out.println("$Failed: \"" + candidate.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
 //									System.out.println("$Acronym: \n" + term + "\n " + a1Term);
-									candidate.term_id = a1Term.term_id;
+								term.term_id = a1Term.term_id;
+								isMatched = true;
+								break;
+							}
+					}
+					break;
+				}
+			}
+			
+		}
+		// if it doesnt match the bacteries before it, try matching with bacteries after it.
+		if(isMatched == false && term_T_id + 1 <= doc.a1Terms.size()){
+			for(int i = term_T_id + 1 ; i <= doc.a1Terms.size(); i++){
+				// Assume first closest bacteria found represents for the not matched bacteria in the text.
+				for(Term a1Term : doc.a1Terms){
+					if(a1Term.T_id == i){
+						if(a1Term.isBacteria == true && !a1Term.name_txt.equals(term.name_txt)){
+								if(a1Term.term_id != 2){ // If previous term already matched
+									System.out.println(doc.file_name);
+									System.out.println("$Failed: \"" + term.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
+//										System.out.println("$Acronym: \n" + term + "\n " + a1Term);
+									term.term_id = a1Term.term_id;
 									isMatched = true;
 									break;
 								}
@@ -188,32 +238,9 @@ public class TestMethods {
 						break;
 					}
 				}
-				
-			}
-			// if it doesnt match the bacteries before it, try matching with bacteries after it.
-			if(isMatched == false && candidate_T_id + 1 < doc.a1Terms.size()){
-				for(int i = candidate_T_id + 1 ; i < doc.a1Terms.size(); i++){
-					// Assume first closest bacteria found represents for the not matched bacteria in the text.
-					for(Term a1Term : doc.a1Terms){
-						if(a1Term.T_id == i){
-							if(a1Term.isBacteria == true && !a1Term.name_txt.equals(candidate.name_txt)){
-									if(a1Term.term_id != 2){ // If previous term already matched
-										System.out.println(doc.file_name);
-										System.out.println("$Failed: \"" + candidate.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
-//										System.out.println("$Acronym: \n" + term + "\n " + a1Term);
-										candidate.term_id = a1Term.term_id;
-										isMatched = true;
-										break;
-									}
-							}
-							break;
-						}
-					}
-				}
 			}
 		}
 		return isMatched;
-
 	}
 
 	public static int computeLevenshteinDistance(CharSequence lhs, CharSequence rhs) {

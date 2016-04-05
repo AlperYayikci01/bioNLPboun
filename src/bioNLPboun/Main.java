@@ -21,7 +21,7 @@ public class Main {
 		
 		
 		System.out.print("Reading documents...");
-		ConstructDocuments("BioNLP-ST-2016_BB-cat_train");
+		ConstructDocuments("BioNLP-ST-2016_BB-cat_dev");
 		System.out.println("Done!");
 		
 		System.out.print("Reading names.dmp file...");
@@ -41,7 +41,7 @@ public class Main {
 
 		System.out.println("Done!");
 		System.out.println("Evaluate matches with training set...");
-		Evaluator.compareA2Files("resources/BB-cat-output-a2-files", "BioNLP-ST-2016_BB-cat_train");
+		Evaluator.compareA2Files("resources/BB-cat-output-a2-files", "BioNLP-ST-2016_BB-cat_dev");
 		System.out.println("Done!");
 		
 		
@@ -143,9 +143,9 @@ public class Main {
 									break;
 								}else{
 									wordsInLine = line.split("\\t");
-									if(wordsInLine[1].startsWith("Bacteria") || wordsInLine[1].startsWith("Habitat")){
 										Term term = new Term();
 										term.isBacteria = (wordsInLine[1].startsWith("Bacteria")) ? true : false;
+										term.isHabitat = (wordsInLine[1].startsWith("Habitat")) ? true : false;
 										term.T_id = Integer.parseInt(wordsInLine[0].substring(1, wordsInLine[0].length()));
 										String[] wordsInBacteria;
 										wordsInBacteria = wordsInLine[1].split(" ");
@@ -159,12 +159,17 @@ public class Main {
 										
 										term.name_txt = term.name_txt.toLowerCase();
 										
+										// EXCEPTION: LAB is very common for Lactobacillales and can be in a document without referring therefore here.
+										if(term.name_txt.equals("lab") || term.name_txt.equals("lactic acid bacteria")){
+											term.name_txt = "Lactobacillales";
+											term.term_id = 186826;
+										}
+										
 										if(term.isBacteria == true){
 											OPTIMIZE_PunctuationRemoval(term);
 																			
 											OPTIMIZE_ExpandAbbrevations(term,doc);
 											
-											OPTIMIZE_SpecialShortenings(term);
 											
 											
 											
@@ -177,19 +182,19 @@ public class Main {
 										
 //										String[] wordsInDoc = (doc.title + doc.paragraph).split(" ");
 										
-
 										
 										doc.a1Terms.add(term);
 									}
-								}
 							}
 							// OPTIMIZATION 2:  HANDLE ACRONYMS LIKE "MRSA" cases here.
 							OPTIMIZE_SingleWordExtension(doc); 
 							
+							OPTIMIZE_SpecialShortenings(doc);
+							
 							OPTIMIZE_MatchAcronyms(doc);
 		
 							handleLongPhrases(doc);
-
+							
 							buf.close();
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
@@ -223,78 +228,88 @@ public class Main {
 		term.name_txt = name_txt;
 	}
 	
-	private static void OPTIMIZE_SpecialShortenings(Term term){
-		// OPTIMIZATION: Special shortenings removal 
-		// { "sp.", "str.", "aff.", "cf.", "subgen.", "gen.", "nov."};
-		// "spp.", "spp" , "strain"
-		// Handle  the case :   T3	Bacteria 38 59	Escherichia coli
-		//						T4	Bacteria 64 75	Escherichia (sp.) coli
-		// Escherichia (sp.) coli should match Escherichia coli
-		
-		String[] shorteningsToRemove = { "sp.", "spp.", "spp", "subsp.", "strain", "str.", "aff.", "cf.", "subgen.", "gen.", "nov."};
-		
-		String[] wordsInTerm = term.name_txt.split(" ");
-		for(int i = 0; i < wordsInTerm.length; i++){
-			if(wordsInTerm[i].contains(":")){
-				String wordToRemove = wordsInTerm[i];
-				wordToRemove = wordToRemove.substring(wordToRemove.indexOf(":"), wordToRemove.length());
-				term.name_txt = term.name_txt.replace(wordToRemove, "");
-			}
-			wordsInTerm = term.name_txt.split(" ");
-			// "eschericia coli type a" should match "eschericia coli a"
-			if(wordsInTerm[i].equalsIgnoreCase("type")){
-//				System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
-				term.name_txt = term.name_txt.replace("type ", "");
-//				System.out.println("\"" + term.name_txt + "\"");
-			}
-			wordsInTerm = term.name_txt.split(" ");
-			// Remove special shortenings
-			for(int j = 0; j < shorteningsToRemove.length; j++){
-				String shortening = shorteningsToRemove[j];
+	private static void OPTIMIZE_SpecialShortenings(Document doc){	
+		for(Term term : doc.a1Terms){
+			if(term.isBacteria == true){
+				// OPTIMIZATION: Special shortenings removal 
+				// { "sp.", "str.", "aff.", "cf.", "subgen.", "gen.", "nov."};
+				// "spp.", "spp" , "strain"
+				// Handle  the case :   T3	Bacteria 38 59	Escherichia coli
+				//						T4	Bacteria 64 75	Escherichia (sp.) coli
+				// Escherichia (sp.) coli should match Escherichia coli
 				
-//				if(wordsInTerm[i].contains(shortening)){
-//					System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
-//					if(i + 1 <= wordsInTerm.length -1){
-//						// If shortening is not at the end of the term, remove what comes next after the shortening.
-//						// Not sure doing this is optimal !!
-//						// especailly if we need the info to separate its sub types.
-//						System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
-//						term.name_txt = term.name_txt.substring(0, term.name_txt.indexOf(shortening)-1);
-//						wordsInTerm = term.name_txt.split(" ");
-//						System.out.println("\"" + term.name_txt + "\"");
-//						continue;
-//					}
-//					
-//				}
+				String[] shorteningsToRemove = { "spp.", "spp", "subsp.", "strain", "str.", "aff.", "cf.", "subgen.", "gen.", "nov."};
 				
-				if(term.name_txt.contains(shortening)){
-//					System.out.print("£SPECIAL \"" + term.name_txt + "\" --> ");
-					if(term.name_txt.contains(" " + shortening)){
-						term.name_txt = term.name_txt.replace(" " + shortening, ""); // remove sp.
+				String[] wordsInTerm = term.name_txt.split(" ");
+				for(int i = 0; i < wordsInTerm.length; i++){
+					if(wordsInTerm[i].contains(":")){
+						String wordToRemove = wordsInTerm[i];
+						wordToRemove = wordToRemove.substring(wordToRemove.indexOf(":"), wordToRemove.length());
+						term.name_txt = term.name_txt.replace(wordToRemove, "");
 						wordsInTerm = term.name_txt.split(" ");
 					}
-					else if(term.name_txt.contains(shortening + " ")){
-						term.name_txt = term.name_txt.replace(shortening + " ", ""); // remove sp.
-						wordsInTerm = term.name_txt.split(" ");
+					
+					// "non-o1 vibrio cholerae" should match "vibrio cholerae non-o1"
+					if(wordsInTerm[i].contains("-") && i != wordsInTerm.length-1){
+						String subtype = wordsInTerm[i];
+						if(term.name_txt.contains(" " + subtype)){
+							term.name_txt = term.name_txt.replace(" " + subtype, ""); // remove non-o1.
+							wordsInTerm = term.name_txt.split(" ");
+						}
+						else if(term.name_txt.contains(subtype + " ")){
+							term.name_txt = term.name_txt.replace(subtype + " ", ""); // remove non-o1.
+							wordsInTerm = term.name_txt.split(" ");
+						}
+		//				System.out.println("£BEFORE" + term.name_txt);
+						term.name_txt += " " + subtype;
+		//				System.out.println("£AFTER" + term.name_txt);
 					}
-//					System.out.println("\"" + term.name_txt + "\"");
+					wordsInTerm = term.name_txt.split(" ");
+					// "eschericia coli type a" should match "eschericia coli a"
+					if(wordsInTerm[i].equalsIgnoreCase("type")){
+		//				System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
+						term.name_txt = term.name_txt.replace("type ", "");
+		//				System.out.println("\"" + term.name_txt + "\"");
+					}
+					wordsInTerm = term.name_txt.split(" ");
+					// Remove special shortenings
+					for(int j = 0; j < shorteningsToRemove.length; j++){
+						String shortening = shorteningsToRemove[j];
+						
+		//				if(wordsInTerm[i].contains(shortening)){
+		//					System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
+		//					if(i + 1 <= wordsInTerm.length -1){
+		//						// If shortening is not at the end of the term, remove what comes next after the shortening.
+		//						// Not sure doing this is optimal !!
+		//						// especailly if we need the info to separate its sub types.
+		//						System.out.print("£FALAN \"" + term.name_txt + "\" --> ");
+		//						term.name_txt = term.name_txt.substring(0, term.name_txt.indexOf(shortening)-1);
+		//						wordsInTerm = term.name_txt.split(" ");
+		//						System.out.println("\"" + term.name_txt + "\"");
+		//						continue;
+		//					}
+		//					
+		//				}
+						
+						if(term.name_txt.contains(shortening)){
+		//					System.out.print("£SPECIAL \"" + term.name_txt + "\" --> ");
+							if(term.name_txt.contains(" " + shortening)){
+								term.name_txt = term.name_txt.replace(" " + shortening, ""); // remove sp.
+								wordsInTerm = term.name_txt.split(" ");
+							}
+							else if(term.name_txt.contains(shortening + " ")){
+								term.name_txt = term.name_txt.replace(shortening + " ", ""); // remove sp.
+								wordsInTerm = term.name_txt.split(" ");
+							}
+		//					System.out.println("\"" + term.name_txt + "\"");
+						}
+						
+						
+					}
+					
+					
 				}
-				
-				
 			}
-			
-			
-			
-//				if(wordsInTerm[i].length() <= 3 || 
-//						wordsInTerm[i].contains(":") || 
-//						wordsInTerm[i].contains("-")){
-//					String str1 = " " + wordsInTerm[i];
-//					String str2 = wordsInTerm[i] + " ";
-//					if(term.name_txt.contains(str1))
-//						term.name_txt = term.name_txt.replace(str1, "");
-//					else if(term.name_txt.contains(str2))
-//						term.name_txt = term.name_txt.replace(str2, "");
-//				}
 		}
 	}
 	
@@ -320,7 +335,9 @@ public class Main {
 				term.name_txt = seperatedWord;
 			}
 		}
-		
+		if(term.name_txt.equals("y. pestis")){
+			System.out.println("here");
+		}
 		// HANDLE OPTIMIZATION 1
 		wordsInTerm = term.name_txt.split(" ");
 		for(int i = 0; i < wordsInTerm.length; i++){
@@ -381,6 +398,19 @@ public class Main {
 											}
 											
 										}
+										// Handle "Yersinia" , "Y. pestis" case
+//										if(a1term.name_txt.split(" ").length == 1 && a1term.name_txt.charAt(0) == term.name_txt.charAt(0)){
+//											System.out.println("£before \"" + term.name_txt +
+//													"\" : \""+ a1term.name_txt + "\"");
+//											
+//											if(term.name_txt.contains(" " + wordsInTerm[i]))
+//												term.name_txt = term.name_txt.replace(" " + wordsInTerm[i], a1term.name_txt); // replace Y. with Yersinia 
+//											else if(term.name_txt.contains(wordsInTerm[i] + " "))
+//												term.name_txt = term.name_txt.replace(wordsInTerm[i] + " ", a1term.name_txt); // replace Y. with Yersinia
+//											
+//											wordsInTerm = term.name_txt.split(" ");
+//											System.out.println("£after \"" + term.name_txt + "\"");
+//										}
 												
 									}
 								}
@@ -493,6 +523,16 @@ public class Main {
 		}
 	}
 	
+// PROBLEMS
+// bacille calmette guerin should match bacille calmette-guerin
+// Edit distance within document 	
+// sp. 'yi remove etme şimdilik
+// "enterica" remove edilebilir
+	
+	
+	
+	
+	
 	private static void OPTIMIZE_MatchAcronyms(Document doc){
 
 		for(Term term : doc.a1Terms){
@@ -518,6 +558,7 @@ public class Main {
 					}
 					
 				}
+				
 				for(Term a1Term : doc.a1Terms){
 					if(doc.acronyms.containsKey(a1Term.name_txt)){
 						a1Term.name_txt = doc.acronyms.get(a1Term.name_txt);

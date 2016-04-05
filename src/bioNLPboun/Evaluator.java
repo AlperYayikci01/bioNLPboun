@@ -141,7 +141,7 @@ public class Evaluator {
 		
 		System.out.println("Results for ALL documents : ");
 		double precision = (double) totalTruePositive / ( totalTruePositive + totalFalsePositive );
-		System.out.println("\tPrecision = %" + Math.round(precision*100));
+		System.out.println("\tPrecision = %" + precision*100);
 		double recall = (double) totalTruePositive / ( totalTruePositive + totalFalseNegative );
 		System.out.println("\tRecall = %" + Math.round(recall*100));
 		double f_measure = (double) 2.0 * (precision * recall ) / ( precision + recall );

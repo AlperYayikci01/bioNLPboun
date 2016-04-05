@@ -2,6 +2,7 @@ package bioNLPboun;
 
 public class Term {
 	public boolean isBacteria;
+	public boolean isHabitat;
 	public int T_id;
 	public int N_id;
 	public int term_id;
@@ -12,6 +13,7 @@ public class Term {
 
 	Term(){
 		this.isBacteria = true;
+		this.isHabitat = true;
 		this.T_id = 0;
 		this.N_id = 0;
 		this.term_id = 2;
@@ -23,6 +25,7 @@ public class Term {
 
 	Term(int T_id,int N_id, int term_id){
 		this.isBacteria = true;
+		this.isHabitat = true;
 		this.T_id = T_id;
 		this.N_id = N_id;
 		this.term_id = term_id;
@@ -32,8 +35,9 @@ public class Term {
 		this.original_name_txt = "";
 	}
 	
-	Term(boolean isBacteria, int T_id, int N_id, int term_id, int start_pos, int end_pos, String name_txt, String original_name_txt){
+	Term(boolean isBacteria,boolean isHabitat, int T_id, int N_id, int term_id, int start_pos, int end_pos, String name_txt, String original_name_txt){
 		this.isBacteria = true;
+		this.isHabitat = true;
 		this.T_id = T_id;
 		this.N_id = N_id;
 		this.term_id = term_id;
@@ -50,7 +54,7 @@ public class Term {
 	
 	@Override
 	public Term clone() {
-		Term term = new Term(this.isBacteria,this.T_id,this.N_id,this.term_id,this.start_pos,this.end_pos,this.name_txt,this.original_name_txt);
+		Term term = new Term(this.isBacteria,this.isHabitat,this.T_id,this.N_id,this.term_id,this.start_pos,this.end_pos,this.name_txt,this.original_name_txt);
 		return term;
 	}
 }
