@@ -84,7 +84,7 @@ public class TestMethods {
 
     public static void ConstructA2Files(Document doc) throws IOException {
     	
-        File file = new File("resources/BB-cat-output-a2-files/"+ doc.file_name.substring(0,doc.file_name.length()-4) + ".a2");
+        File file = new File("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\resources\\BB-cat-output-a2-files\\"+ doc.file_name.substring(0,doc.file_name.length()-4) + ".a2");
         if (!file.exists()) {
         	file.createNewFile();
         }

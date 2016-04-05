@@ -7,7 +7,7 @@ import java.util.logging.*;
 public class Main {
 	public static ArrayList<File> trainFiles = new ArrayList<File>(); // All File objects of training set
 	public static ArrayList<Document> trainDocs = new ArrayList<Document>(); // All Document objects of training set
-	public static ArrayList<Names> allNames = new ArrayList<Names>(); // All Names objects of names.dmp file.
+	//public static ArrayList<Names> allNames = new ArrayList<Names>(); // All Names objects of names.dmp file.
 	public static TreeMap<String, Names> allNamesMap = new TreeMap<>();
 	public static ArrayList<String> allNamesList = new ArrayList<>();
 	public static final int NEXT_N_WORDS = 4;
@@ -21,14 +21,14 @@ public class Main {
 		
 		
 		System.out.print("Reading documents...");
-		ConstructDocuments("BioNLP-ST-2016_BB-cat_train");
+		ConstructDocuments("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\BioNLP-ST-2016_BB-cat_train\\BioNLP-ST-2016_BB-cat_train");
 		System.out.println("Done!");
 		
 		System.out.print("Reading names.dmp file...");
 		ConstructNamesObjects();
 		System.out.println("Done!");
 		
-		System.out.print("Processing documents...");
+		System.out.print("Processing documents..."); //to be used in "ner" task
 		ProcessDocuments(trainDocs);
 		System.out.println("Done!");
 
@@ -41,7 +41,7 @@ public class Main {
 
 		System.out.println("Done!");
 		System.out.println("Evaluate matches with training set...");
-		Evaluator.compareA2Files("resources/BB-cat-output-a2-files", "BioNLP-ST-2016_BB-cat_train");
+		Evaluator.compareA2Files("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\resources\\BB-cat-output-a2-files", "C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\BioNLP-ST-2016_BB-cat_train\\BioNLP-ST-2016_BB-cat_train");
 		System.out.println("Done!");
 		
 		
@@ -186,7 +186,7 @@ public class Main {
 							// OPTIMIZATION 2:  HANDLE ACRONYMS LIKE "MRSA" cases here.
 							OPTIMIZE_SingleWordExtension(doc); 
 							
-							OPTIMIZE_MatchAcronyms(doc);
+							OPTIMIZE_MatchAcronyms(doc); //serotype a, b, c cases are also handled here.
 		
 							handleLongPhrases(doc);
 
@@ -503,7 +503,7 @@ public class Main {
 					// Assume first closest bacteria found represents for all the "MRSA" s in the text.
 					for(Term a1Term : doc.a1Terms){
 						if(a1Term.T_id == i){
-							if(a1Term.isBacteria == true && !a1Term.equals(term.name_txt)){
+							if(a1Term.isBacteria == true && !a1Term.name_txt.equals(term.name_txt)){
 									if(!doc.acronyms.containsKey(term.name_txt)){
 //										System.out.println(doc.file_name);
 //										System.out.println("$Acronym: \"" + term.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
@@ -517,6 +517,36 @@ public class Main {
 						}
 					}
 					
+				}
+				for(Term a1Term : doc.a1Terms){
+					if(doc.acronyms.containsKey(a1Term.name_txt)){
+						a1Term.name_txt = doc.acronyms.get(a1Term.name_txt);
+					}
+				}
+			}
+			else if ((term.name_txt.contains("Serotype") || term.name_txt.contains("serotype") )&& term.isBacteria == true && !doc.acronyms.containsKey(term.name_txt))
+			{
+
+				int acronym_T_id = term.T_id;
+//					System.out.println(doc.file_name + " - acronym_T_id : "+ acronym_T_id);
+				for(int i = acronym_T_id -1 ; i > 0; i--){
+					// Assume first closest bacteria found represents for all the "serotype a, serotype b etc" s in the text.
+					for(Term a1Term : doc.a1Terms){
+						if(a1Term.T_id == i){
+							if(a1Term.isBacteria == true && (!a1Term.name_txt.contains("Serotype") || !a1Term.name_txt.contains("serotype")) ){
+								if(!doc.acronyms.containsKey(term.name_txt)){
+//										System.out.println(doc.file_name);
+//										System.out.println("$Acronym: \"" + term.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
+//										System.out.println("$Acronym: \n" + term + "\n " + a1Term);
+									doc.acronyms.put(term.name_txt, a1Term.name_txt);
+								}
+
+								break;
+							}
+							break;
+						}
+					}
+
 				}
 				for(Term a1Term : doc.a1Terms){
 					if(doc.acronyms.containsKey(a1Term.name_txt)){
@@ -567,10 +597,12 @@ public class Main {
 
 	}
 
+
+
 	private static void ConstructNamesObjects(){
 
 		ArrayList<String> namesDmpFields = new ArrayList<String>();
-		namesDmpFields = ReadFields("taxdump/names.dmp");
+		namesDmpFields = ReadFields("C:\\Users\\berfu\\Desktop\\spring'16\\cmpe492\\taxdump\\names.dmp");
 		int indexWord = 0;
 		while(indexWord < namesDmpFields.size()){
 			int tax_id = Integer.parseInt(namesDmpFields.get(indexWord));
@@ -591,7 +623,7 @@ public class Main {
             name_txt = name_txt.toLowerCase();
 
 			Names namesObj = new Names(tax_id,name_txt,unique_name,name_class);
-			allNames.add(namesObj);
+		//	allNames.add(namesObj);
             allNamesMap.put(name_txt, namesObj);
 			indexWord += 4;
 		}
