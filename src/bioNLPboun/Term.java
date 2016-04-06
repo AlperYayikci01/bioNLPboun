@@ -12,8 +12,8 @@ public class Term {
 	public String original_name_txt;
 
 	Term(){
-		this.isBacteria = true;
-		this.isHabitat = true;
+		this.isBacteria = false;
+		this.isHabitat = false;
 		this.T_id = 0;
 		this.N_id = 0;
 		this.term_id = 2;
@@ -24,8 +24,8 @@ public class Term {
 	}
 
 	Term(int T_id,int N_id, int term_id){
-		this.isBacteria = true;
-		this.isHabitat = true;
+		this.isBacteria = false;
+		this.isHabitat = false;
 		this.T_id = T_id;
 		this.N_id = N_id;
 		this.term_id = term_id;
@@ -36,8 +36,8 @@ public class Term {
 	}
 	
 	Term(boolean isBacteria,boolean isHabitat, int T_id, int N_id, int term_id, int start_pos, int end_pos, String name_txt, String original_name_txt){
-		this.isBacteria = true;
-		this.isHabitat = true;
+		this.isBacteria = isBacteria;
+		this.isHabitat = isHabitat;
 		this.T_id = T_id;
 		this.N_id = N_id;
 		this.term_id = term_id;

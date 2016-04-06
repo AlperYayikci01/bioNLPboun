@@ -47,7 +47,7 @@ public class TestMethods {
 				if(i-n < 0)
 					break;
 				if(!doc.candidates.get(i).name_txt.contains((CharSequence) doc.candidates.get(i-n).name_txt)){
-					// If previous candidate is not shorter version of the candidate, leave and pull next canddidate.
+					// If previous candidate is not shorter version of the candidate, leave and pull next candidate.
 					break;
 				}else{
 					if(isMatched){
@@ -96,18 +96,20 @@ public class TestMethods {
         }
     	int N_id = 1;
     	for(Term term : doc.a1Terms){
-    		if(term.term_id == 2 && term.isBacteria == true){
-    			matchNonMatchedWithAlreadyMatched(term,doc);
+    		if(term.isBacteria == true){
+    			if(term.term_id == 2){
+        			matchNonMatchedWithAlreadyMatched(term,doc);
+        		}
+        		String termID = String.valueOf(term.term_id);
+    			String isBacteria = "NCBI_Taxonomy";
+    			if(term.isHabitat == true){
+    				isBacteria = "OntoBiotope";
+    				termID = "OBT:000000";
+    			}
+    			writer_a2.println("N" + N_id + "\t" + isBacteria + " Annotation:T" + term.T_id + 
+        				" Referent:" + termID);
+    			N_id ++;
     		}
-    		String termID = String.valueOf(term.term_id);
-			String isBacteria = "NCBI_Taxonomy";
-			if(term.isHabitat == true){
-				isBacteria = "OntoBiotope";
-				termID = "OBT:000000";
-			}
-			writer_a2.println("N" + N_id + "\t" + isBacteria + " Annotation:T" + term.T_id + 
-    				" Referent:" + termID);
-			N_id ++;
     	}
     	writer_a2.close();
     }
@@ -198,6 +200,7 @@ public class TestMethods {
 	}
 
 	public static boolean matchNonMatchedWithAlreadyMatched(Term term, Document doc){
+		
 		boolean isMatched = false;
 		int term_T_id = term.T_id;
 		for(int i = term_T_id -1 ; i > 0; i--){
@@ -206,9 +209,8 @@ public class TestMethods {
 				if(a1Term.T_id == i){
 					if(a1Term.isBacteria == true && !a1Term.name_txt.equals(term.name_txt)){
 							if(a1Term.term_id != 2){ // If previous term already matched
-//									System.out.println(doc.file_name);
-//									System.out.println("$Failed: \"" + candidate.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
-//									System.out.println("$Acronym: \n" + term + "\n " + a1Term);
+								System.out.println(doc.file_name);
+								System.out.println("$Failed: \"" + term.name_txt + "\" --> \"" + a1Term.name_txt + "\"");
 								term.term_id = a1Term.term_id;
 								isMatched = true;
 								break;
